@@ -8,6 +8,16 @@
 </head>
 <body class="cv">
   {% set _contacts = contact_lines | default([], true) %}
+  {# contact_links trae {label, href} para que los enlaces queden clickeables en el PDF.
+     Si el contexto no lo provee, se cae a texto plano sin enlace. #}
+  {% set _contact_links = contact_links | default([], true) %}
+  {% if not _contact_links %}
+    {% set _plain = [] %}
+    {% for c in _contacts %}
+      {% if c %}{% set _ = _plain.append({'label': c, 'href': None}) %}{% endif %}
+    {% endfor %}
+    {% set _contact_links = _plain %}
+  {% endif %}
   {% set _skills = skills | default([], true) %}
   {% set _experiences = experiences | default([], true) %}
   {% set _education = education | default([], true) %}
@@ -22,8 +32,12 @@
           <section class="s-sec">
             <h2 class="s-title">Contacto</h2>
             <ul class="s-contact">
-              {% for c in _contacts %}
-                {% if c %}<li>{{ c | replace('https://', '') | replace('http://', '') }}</li>{% endif %}
+              {% for l in _contact_links %}
+                {% if l.label %}
+                  <li>
+                    {% if l.href %}<a href="{{ l.href }}">{{ l.label }}</a>{% else %}{{ l.label }}{% endif %}
+                  </li>
+                {% endif %}
               {% endfor %}
             </ul>
           </section>

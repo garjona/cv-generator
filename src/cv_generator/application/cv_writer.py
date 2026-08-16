@@ -46,6 +46,7 @@ class CVContentBuilder:
             "candidate_name": profile.basics.get("name", "Candidato/a"),
             "professional_title": self._professional_title(profile, selected_raw),
             "contact_lines": self._contact_lines(profile.basics),
+            "contact_links": self._contact_links(profile.basics),
             "job_target": {"title": job.title, "company": job.company, "location": job.location},
             "professional_summary": summary,
             "skills_section_title": "Habilidades Relevantes",
@@ -70,10 +71,30 @@ class CVContentBuilder:
             qa_warnings=qa_warnings,
         )
 
+    CONTACT_KEYS = ["email", "phone", "linkedin", "github", "portfolio", "location"]
+
     def _contact_lines(self, basics: dict[str, Any]) -> list[str]:
-        keys = ["email", "phone", "linkedin", "github", "portfolio", "location"]
-        values = [str(basics.get(k, "")).strip() for k in keys if str(basics.get(k, "")).strip()]
+        values = [str(basics.get(k, "")).strip() for k in self.CONTACT_KEYS if str(basics.get(k, "")).strip()]
         return values[:5]
+
+    def _contact_links(self, basics: dict[str, Any]) -> list[dict[str, Any]]:
+        """Contactos con su href, para que los links queden clickeables en el PDF."""
+        out: list[dict[str, Any]] = []
+        for key in self.CONTACT_KEYS:
+            value = str(basics.get(key, "")).strip()
+            if not value:
+                continue
+            label = re.sub(r"^https?://", "", value)
+            href: str | None = None
+            if key == "email":
+                href = f"mailto:{value}"
+            elif key == "phone":
+                digits = re.sub(r"[^\d+]", "", value)
+                href = f"tel:{digits}" if digits else None
+            elif key in {"linkedin", "github", "portfolio"}:
+                href = value if value.lower().startswith("http") else f"https://{value}"
+            out.append({"label": label, "href": href})
+        return out[:5]
 
     def _professional_title(self, profile: MasterProfile, selected_raw: list[dict[str, Any]]) -> str:
         headline = str(profile.basics.get("headline", "")).strip()

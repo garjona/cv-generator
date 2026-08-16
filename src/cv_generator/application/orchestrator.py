@@ -80,6 +80,12 @@ class CVGenerationOrchestrator:
         job = self.job_parser.parse_path(request.job_path) if request.job_path else self.job_parser.parse_text(request.job_text or "")
         cv = self.cv_parser.parse_path(request.cv_path)
 
+        # El parseo nunca debe fallar en silencio: lo que no se pudo extraer se avisa.
+        for warning in cv.parsing_warnings:
+            self.logger.warning("Parseo CV base: %s", warning)
+        for warning in job.parsing_warnings:
+            self.logger.warning("Parseo oferta: %s", warning)
+
         job_json = request.output_dir / "job_posting_normalized.json"
         job_json.write_text(json.dumps(job.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
         cv_json = request.output_dir / "cv_base_normalized.json"
@@ -111,6 +117,13 @@ class CVGenerationOrchestrator:
             generated.report_markdown += "\n## QA Warnings\n"
             for warning in qa_warnings:
                 generated.report_markdown += f"- {warning}\n"
+
+        if cv.parsing_warnings or job.parsing_warnings:
+            generated.report_markdown += "\n## Advertencias de parseo\n"
+            for warning in cv.parsing_warnings:
+                generated.report_markdown += f"- [CV base] {warning}\n"
+            for warning in job.parsing_warnings:
+                generated.report_markdown += f"- [Oferta] {warning}\n"
 
         template_context = dict(generated.latex_context)
         if request.template_adapter_file:

@@ -103,6 +103,7 @@ class CVParser:
             warnings.append("El texto extraído del CV quedó vacío.")
         lines = [line.strip() for line in cleaned.splitlines()]
         basics = self._parse_basics(lines)
+        warnings.extend(self._basics_warnings(basics))
         sections, section_warnings = self._segment_sections(lines)
         warnings.extend(section_warnings)
 
@@ -225,6 +226,9 @@ class CVParser:
             basics["email"] = email.group(0)
         if phone:
             basics["phone"] = phone
+        location = self._extract_location(search_lines)
+        if location:
+            basics["location"] = location
         if linkedin:
             basics["linkedin"] = self._ensure_url_scheme(linkedin.group(1))
         if github:
@@ -249,6 +253,38 @@ class CVParser:
 
     def _looks_like_date_token(self, value: str) -> bool:
         return bool(re.fullmatch(r"\d{2}\-\d{2}\-\d{4}", value.strip()))
+
+    def _basics_warnings(self, basics: dict[str, Any]) -> list[str]:
+        """Avisa explícitamente por cada dato de contacto que no se pudo extraer.
+
+        El parseo no debe fallar en silencio: si el CV trae el dato pero la
+        heurística no lo reconoce, el usuario tiene que enterarse.
+        """
+        expected = {
+            "name": "nombre",
+            "email": "email",
+            "phone": "teléfono",
+            "linkedin": "LinkedIn",
+            "location": "ubicación (usa una línea 'Ubicación: Ciudad, País')",
+        }
+        missing = [label for key, label in expected.items() if not str(basics.get(key, "")).strip()]
+        if not missing:
+            return []
+        return [f"No se detectó en el CV base: {', '.join(missing)}."]
+
+    def _extract_location(self, lines: list[str]) -> str | None:
+        """Extrae la ubicación desde una línea etiquetada (Ubicación/Ciudad/Location)."""
+        for line in lines:
+            match = re.match(
+                r"^\s*[\-\*•]?\s*(?:ubicaci[oó]n|ciudad|location|residencia|domicilio)\s*[:\-]\s*(.+)$",
+                self._strip_format_markers(line),
+                flags=re.I,
+            )
+            if match:
+                value = re.sub(r"\s+", " ", match.group(1)).strip().strip(".")
+                if value:
+                    return value
+        return None
 
     def _ensure_url_scheme(self, value: str) -> str:
         if re.match(r"^https?://", value, flags=re.I):
