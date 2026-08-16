@@ -222,6 +222,7 @@ class CVContentBuilder:
             bullets = [cleaned_description] if cleaned_description else []
         return {
             "name": proj.get("name"),
+            "date_range": self._date_range(proj.get("start_date"), proj.get("end_date")),
             "bullets": self._dedupe_strings(bullets)[:bullets_limit],
             "skills": self._canonical_skill_list(proj.get("skills", []), limit=6),
         }

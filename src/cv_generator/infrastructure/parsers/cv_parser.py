@@ -717,11 +717,27 @@ class CVParser:
                 continue
             clean_fmt = [self._strip_format_markers(line) for line in clean]
             bullets = [re.sub(r"^[\-\*\u2022]\s*", "", line).strip() for line in clean_fmt[1:] if re.match(r"^[\-\*\u2022]\s+", line)]
-            details = [line for line in clean_fmt[1:] if not re.match(r"^[\-\*\u2022]\s+", line)]
+
+            # Las l\u00edneas sueltas pueden ser fecha o descripci\u00f3n; la fecha se
+            # extrae en vez de perderse cuando el proyecto ya tiene bullets.
+            start_date: str | None = None
+            end_date: str | None = None
+            details: list[str] = []
+            for line in clean_fmt[1:]:
+                if re.match(r"^[\-\*\u2022]\s+", line):
+                    continue
+                if start_date is None and self._looks_like_date_line(line):
+                    start_date, end_date = self._extract_date_range(line, None, None)
+                    if start_date or end_date:
+                        continue
+                details.append(line)
+
             result.append(
                 {
                     "name": self._strip_format_markers(clean_fmt[0]),
                     "description": " ".join(details).strip() if details else None,
+                    "start_date": start_date,
+                    "end_date": end_date,
                     "bullets": bullets,
                     "skills": self._skills_from_text(" ".join(clean_fmt)),
                 }

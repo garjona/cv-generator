@@ -137,10 +137,12 @@
           <h2 class="m-title">Proyectos</h2>
           {% for pr in _projects %}
             {% set name = pr.name | default('', true) if pr is mapping else '' %}
+            {% set pr_dates = pr.date_range | default('', true) if pr is mapping else '' %}
             {% set bullets = pr.bullets | default([], true) if pr is mapping else [] %}
             {% set pr_skills = pr.skills | default([], true) if pr is mapping else [] %}
             <article class="job">
               <div class="job-title">{{ name }}</div>
+              {% if pr_dates %}<div class="job-meta">{{ pr_dates }}</div>{% endif %}
               {% if bullets and (bullets | length > 0) %}
                 <ul class="job-bullets">
                   {% for b in bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}
