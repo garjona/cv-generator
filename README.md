@@ -1,5 +1,9 @@
 # CV Generator
 
+[![tests](https://github.com/garjona/cv-generator/actions/workflows/tests.yml/badge.svg)](https://github.com/garjona/cv-generator/actions/workflows/tests.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 Generador de CVs adaptados a una oferta laboral concreta. Toma tu CV base y la descripción del puesto, calcula la compatibilidad entre ambos y produce un CV en `HTML/CSS` listo para exportar a PDF.
 
 El pipeline es **determinístico**: el LLM es opcional y sólo se usa para refinar redacción. **Nunca se afirma una skill que no esté confirmada en tu perfil** — las que faltan se reportan como brecha en un informe aparte.
