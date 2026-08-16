@@ -2,6 +2,8 @@
 
 import json
 import logging
+import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -31,6 +33,7 @@ class GenerationRequest:
     compile_pdf: bool = True
     export_jpg_pages: bool = True
     jpg_dpi: int = 180
+    output_name: str | None = None
 
 
 class CVGenerationOrchestrator:
@@ -142,6 +145,7 @@ class CVGenerationOrchestrator:
             if self.html_renderer is None:
                 raise ValueError("No hay renderer HTML configurado en el orquestador.")
 
+            base_name = self._output_base_name(request, profile)
             template_name = self._html_template_name(request.template_style, request.template_file)
             css_template_name = self._html_css_template_name(
                 request.template_style,
@@ -149,8 +153,8 @@ class CVGenerationOrchestrator:
                 request.template_file,
             )
 
-            output_source = request.output_dir / "output_cv.html"
-            output_css = request.output_dir / "output_cv.css"
+            output_source = request.output_dir / f"{base_name}.html"
+            output_css = request.output_dir / f"{base_name}.css"
             html_context = dict(template_context)
             html_context["css_file_name"] = output_css.name
 
@@ -166,7 +170,7 @@ class CVGenerationOrchestrator:
                 else:
                     output_pdf, pdf_error = self.html_pdf_compiler.compile_pdf(
                         output_source,
-                        output_pdf_path=request.output_dir / "output_cv.pdf",
+                        output_pdf_path=request.output_dir / f"{base_name}.pdf",
                     )
 
                 if pdf_error:
@@ -181,8 +185,9 @@ class CVGenerationOrchestrator:
             if self.typst_renderer is None:
                 raise ValueError("No hay renderer Typst configurado en el orquestador.")
 
+            base_name = self._output_base_name(request, profile)
             template_name = self._typst_template_name(request.template_style, request.template_file)
-            output_source = request.output_dir / "output_cv.typ"
+            output_source = request.output_dir / f"{base_name}.typ"
             self.typst_renderer.render(template_name, template_context, output_source)
 
             if request.compile_pdf:
@@ -255,6 +260,34 @@ class CVGenerationOrchestrator:
             "ats_friendly": "ats_typst.typ.j2",
             "minimal_cv": "minimal_cv.typ.j2",
         }.get(template_style, "ats_typst.typ.j2")
+
+    def _output_base_name(self, request: GenerationRequest, profile) -> str:
+        """Nombre base de los archivos de salida.
+
+        Un PDF llamado `output_cv.pdf` se ve genérico cuando alguien lo descarga;
+        se prefiere `CV_Nombre_Apellido`. Se puede forzar con `output_name`.
+        """
+        explicit = str(getattr(request, "output_name", "") or "").strip()
+        if explicit:
+            return self._slugify_name(explicit) or "output_cv"
+
+        name = str(profile.basics.get("name", "")).strip()
+        if not name:
+            return "output_cv"
+
+        parts = [p for p in re.split(r"\s+", name) if p]
+        # En nombres hispanos (nombre + segundo nombre + dos apellidos) se omite
+        # el segundo nombre para un archivo más corto y legible.
+        if len(parts) >= 4:
+            parts = [parts[0], *parts[-2:]]
+        return self._slugify_name("CV " + " ".join(parts)) or "output_cv"
+
+    def _slugify_name(self, value: str) -> str:
+        """Sin acentos ni caracteres raros: máxima compatibilidad entre sistemas."""
+        normalized = unicodedata.normalize("NFKD", value)
+        ascii_only = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+        cleaned = re.sub(r"[^A-Za-z0-9]+", "_", ascii_only).strip("_")
+        return cleaned
 
     def _html_template_name(self, template_style: str, template_file: Path | None) -> str:
         if template_file:

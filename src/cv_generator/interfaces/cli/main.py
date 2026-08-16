@@ -52,6 +52,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--profile-id", default="default", help="ID del perfil maestro")
     parser.add_argument("--db-path", default=None, help="Ruta SQLite para persistencia del perfil maestro")
     parser.add_argument("--output-dir", default=None, help="Directorio de salida (si no, se genera timestamp)")
+    parser.add_argument(
+        "--output-name",
+        default=None,
+        help="Nombre base de los archivos generados (si no, se deriva del nombre del candidato: CV_Nombre_Apellido)",
+    )
     parser.add_argument("--no-interactive", action="store_true", help="Omitir preguntas guiadas")
     parser.add_argument("--no-pdf", action="store_true", help="No intentar compilación a PDF")
     parser.add_argument(
@@ -148,6 +153,7 @@ def main() -> None:
         compile_pdf=not args.no_pdf,
         export_jpg_pages=not args.no_jpg_pages,
         jpg_dpi=max(72, args.jpg_dpi),
+        output_name=args.output_name,
     )
 
     artifacts = orchestrator.run(request, ask_user=None if args.no_interactive else ask_questions_cli)

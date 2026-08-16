@@ -96,6 +96,8 @@ python main.py `
 
 Si omites `--output-dir`, se crea una carpeta con timestamp (`outputs/AAAAMMDD_HHMMSS`).
 
+Los archivos se nombran a partir del candidato (`CV_Nombre_Apellido.pdf`) en vez de un genérico `output_cv.pdf`, para que el archivo se vea profesional al descargarlo. Puedes forzar otro nombre con `--output-name`.
+
 ### Opciones principales
 
 | Opción | Descripción |
@@ -109,6 +111,7 @@ Si omites `--output-dir`, se crea una carpeta con timestamp (`outputs/AAAAMMDD_H
 | `--template-adapter-file` | Adapter JSON para mapear el contexto canónico a otra plantilla |
 | `--profile-id` | ID del perfil maestro (default `default`) |
 | `--db-path` | Ruta del SQLite del perfil maestro |
+| `--output-name` | Nombre base de los archivos generados (default: `CV_Nombre_Apellido`) |
 | `--no-interactive` | Omite las preguntas guiadas |
 | `--no-pdf` | No intenta compilar a PDF |
 | `--no-jpg-pages` | No exporta JPG por página |
@@ -127,9 +130,9 @@ Si omites `--output-dir`, se crea una carpeta con timestamp (`outputs/AAAAMMDD_H
 
 En el directorio de salida:
 
-- `output_cv.html` y `output_cv.css` — CV renderizado
-- `output_cv.pdf` — si hay navegador headless disponible
-- `output_cv_page_N.jpg` — una imagen por página
+- `CV_Nombre_Apellido.html` y `.css` — CV renderizado
+- `CV_Nombre_Apellido.pdf` — si hay navegador headless disponible
+- `CV_Nombre_Apellido_page_N.jpg` — una imagen por página
 - `cv_generation_report.md` — score, coincidencias, brechas y decisiones aplicadas
 - `job_posting_normalized.json`, `cv_base_normalized.json`, `master_profile.json`, `template_context.json`
 - `execution.log`
