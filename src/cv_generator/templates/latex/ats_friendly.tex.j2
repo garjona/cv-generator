@@ -1,0 +1,87 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.6cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+\pagenumbering{gobble}
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titleformat{\section}{\large\bfseries}{}{0pt}{}
+\setlist[itemize]{leftmargin=12pt,itemsep=1pt,topsep=2pt}
+
+\begin{document}
+
+{\LARGE \textbf{ {{ candidate_name | latex }} }}\\[4pt]
+{% if contact_lines %}
+{% for item in contact_lines %}{{ item | latex }}{% if not loop.last %} \textbar{} {% endif %}{% endfor %}\\[4pt]
+{% endif %}
+{% if job_target.title %}
+\textit{CV adaptado para {{ job_target.title | latex }}{% if job_target.company %} en {{ job_target.company | latex }}{% endif %}}\\
+{% endif %}
+
+{% if professional_summary %}
+\section*{Resumen Profesional}
+{{ professional_summary | latex }}
+{% endif %}
+
+{% if skills %}
+\section*{ {{ skills_section_title | latex }} }
+\begin{itemize}
+{% for skill in skills %}
+  \item {{ skill | latex }}
+{% endfor %}
+\end{itemize}
+{% endif %}
+
+{% if experiences %}
+\section*{Experiencia Profesional}
+{% for exp in experiences %}
+\textbf{ {{ exp.title | default('', true) | latex }} }{% if exp.company %} --- {{ exp.company | latex }}{% endif %}{% if exp.date_range %} \hfill {{ exp.date_range | latex }}{% endif %}\\
+{% if exp.bullets %}
+\begin{itemize}
+{% for bullet in exp.bullets %}
+  \item {{ bullet | latex }}
+{% endfor %}
+\end{itemize}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if projects %}
+\section*{Proyectos}
+{% for proj in projects %}
+\textbf{ {{ proj.name | default('', true) | latex }} }\\
+{% if proj.bullets %}
+\begin{itemize}
+{% for bullet in proj.bullets %}
+  \item {{ bullet | latex }}
+{% endfor %}
+\end{itemize}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if achievements %}
+\section*{Logros Destacados}
+\begin{itemize}
+{% for item in achievements %}
+  \item {{ item | latex }}
+{% endfor %}
+\end{itemize}
+{% endif %}
+
+{% if education %}
+\section*{Educación}
+{% for edu in education %}
+\textbf{ {{ edu.degree | default('', true) | latex }} }{% if edu.institution %} --- {{ edu.institution | latex }}{% endif %}{% if edu.year %} \hfill {{ edu.year | latex }}{% endif %}\\
+{% if edu.details %}
+{% for item in edu.details %}{{ item | latex }}{% if not loop.last %} | {% endif %}{% endfor %}\\
+{% endif %}
+{% endfor %}
+{% endif %}
+
+\end{document}

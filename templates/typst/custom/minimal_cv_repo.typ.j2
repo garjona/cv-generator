@@ -1,0 +1,158 @@
+#import "@preview/minimal-cv:0.2.0": *
+
+#set page(
+  margin: (
+    left: 40pt,
+    right: 40pt,
+    top: 30pt,
+    bottom: 30pt,
+  ),
+)
+
+#show: cv.with(
+  theme: (
+    spacing: 12pt,
+  )
+)
+
+= {{ profile.name | default("Candidato/a", true) | typst }}
+{% if target.title %}
+== {{ target.title | typst }}{% if target.company %} | {{ target.company | typst }}{% endif %}
+{% elif profile.headline %}
+== {{ profile.headline | typst }}
+{% endif %}
+
+#grid(
+  columns: (9fr, 34pt, 6fr),
+
+  {
+    {% if profile.summary %}
+    section(
+      [Resumen profesional],
+      {
+        [{{ profile.summary | typst }}]
+      }
+    )
+    {% endif %}
+
+    {% if sections.experience %}
+    section(
+      [Experiencia profesional],
+      {
+        {% for exp in sections.experience %}
+        entry(
+          right: [{% if exp.company %}*\@{{ exp.company | typst }}*{% else %}Sin empresa{% endif %}{% if exp.location %} -- {{ exp.location | typst }}{% endif %}],
+          {% if exp.date_range %}[{{ exp.date_range | typst }}],{% else %}none,{% endif %}
+          [{{ exp.title | default("Experiencia", true) | typst }}],
+          [
+            {% if exp.bullets %}
+            list(
+              {% for bullet in exp.bullets %}
+              [{{ bullet | typst }}],
+              {% endfor %}
+            )
+            {% elif exp.skills %}
+            [Stack: {{ exp.skills | join(", ") | typst }}]
+            {% else %}
+            [Sin detalle adicional registrado.]
+            {% endif %}
+          ],
+        )
+        {% endfor %}
+      }
+    )
+    {% endif %}
+
+    {% if sections.projects %}
+    section(
+      [Proyectos],
+      {
+        {% for project in sections.projects %}
+        entry(
+          right: [{% if project.skills %}{{ project.skills | join(", ") | typst }}{% endif %}],
+          none,
+          [{{ project.name | default("Proyecto", true) | typst }}],
+          [
+            {% if project.bullets %}
+            list(
+              {% for bullet in project.bullets %}
+              [{{ bullet | typst }}],
+              {% endfor %}
+            )
+            {% else %}
+            [Proyecto relevante del perfil maestro.]
+            {% endif %}
+          ],
+        )
+        {% endfor %}
+      }
+    )
+    {% endif %}
+
+    {% if sections.education %}
+    section(
+      [Educación],
+      {
+        {% for edu in sections.education %}
+        entry(
+          right: [{% if edu.institution %}*\@{{ edu.institution | typst }}*{% endif %}],
+          {% if edu.year %}[{{ edu.year | typst }}],{% else %}none,{% endif %}
+          [{{ edu.degree | default("Formación", true) | typst }}],
+          [{% if edu.details %}{{ edu.details | join(" · ") | typst }}{% else %}Formación académica registrada.{% endif %}],
+        )
+        {% endfor %}
+      }
+    )
+    {% endif %}
+  },
+
+  {},
+
+  {
+    show: theme.with(
+      gutter-width: 44pt,
+      section-style: "underlined",
+    )
+
+    section(
+      [Contacto],
+      {
+        {% if profile.contacts %}
+        list(
+          {% for line in profile.contacts %}
+          [{{ line | typst }}],
+          {% endfor %}
+        )
+        {% else %}
+        [Contacto no informado.]
+        {% endif %}
+      }
+    )
+
+    {% if sections.skills %}
+    section(
+      [Skills clave],
+      {
+        list(
+          {% for skill in sections.skills %}
+          [{{ skill | typst }}],
+          {% endfor %}
+        )
+      }
+    )
+    {% endif %}
+
+    {% if sections.achievements %}
+    section(
+      [Logros],
+      {
+        list(
+          {% for item in sections.achievements %}
+          [{{ item | typst }}],
+          {% endfor %}
+        )
+      }
+    )
+    {% endif %}
+  },
+)

@@ -1,0 +1,33 @@
+{
+  "mapping": {
+    "profile": {
+      "name": "candidate_name",
+      "contacts": "contact_lines",
+      "summary": "professional_summary",
+      "headline": {
+        "$path": "focus_preference",
+        "$default": "Perfil profesional"
+      }
+    },
+    "target": {
+      "title": "job_target.title",
+      "company": "job_target.company",
+      "location": "job_target.location"
+    },
+    "sections": {
+      "skills": "skills",
+      "experience": "experiences",
+      "projects": "projects",
+      "education": "education",
+      "achievements": "achievements"
+    },
+    "meta": {
+      "page_target": "page_target"
+    }
+  },
+  "static": {
+    "meta": {
+      "template_source": "@preview/minimal-cv:0.2.0"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+﻿#set page(margin: (x: 1.6cm, y: 1.4cm))
+#set text(size: 10pt)
+
+#text(size: 19pt, weight: "bold")[{{ candidate_name | typst }}]
+{% if contact_lines %}
+{{ contact_lines | join(' · ') | typst }}
+{% endif %}
+
+{% if professional_summary %}
+== Perfil
+{{ professional_summary | typst }}
+{% endif %}
+
+{% if skills %}
+== Skills
+{{ skills | join(' · ') | typst }}
+{% endif %}
+
+{% if experiences %}
+== Experiencia
+{% for exp in experiences %}
+#text(weight: "bold")[{{ exp.title | default('', true) | typst }}]{% if exp.company %} — {{ exp.company | typst }}{% endif %}{% if exp.date_range %} ({{ exp.date_range | typst }}){% endif %}
+{% for bullet in exp.bullets %}
+- {{ bullet | typst }}
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+{% if education %}
+== Educación
+{% for edu in education %}
+- {{ edu.degree | default('', true) | typst }}{% if edu.institution %} — {{ edu.institution | typst }}{% endif %}
+{% endfor %}
+{% endif %}

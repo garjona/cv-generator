@@ -1,0 +1,69 @@
+﻿#set page(margin: (x: 1.5cm, y: 1.3cm))
+#set text(size: 10pt)
+#set par(leading: 0.55em)
+#show heading.where(level: 1): set text(size: 12pt, weight: "bold")
+#show heading.where(level: 2): set text(size: 10.5pt, weight: "bold")
+
+#text(size: 20pt, weight: "bold")[{{ candidate_name | typst }}]
+{% if contact_lines %}
+{{ contact_lines | join(' · ') | typst }}
+{% endif %}
+{% if job_target and job_target.title %}
+#text(style: "italic")[CV adaptado para {{ job_target.title | typst }}{% if job_target.company %} en {{ job_target.company | typst }}{% endif %}]
+{% endif %}
+
+{% if professional_summary %}
+= Resumen Profesional
+{{ professional_summary | typst }}
+{% endif %}
+
+{% if skills %}
+= {{ skills_section_title | default('Habilidades Relevantes', true) | typst }}
+{% for skill in skills %}
+- {{ skill | typst }}
+{% endfor %}
+{% endif %}
+
+{% if experiences %}
+= Experiencia Profesional
+{% for exp in experiences %}
+#text(weight: "bold")[{{ exp.title | default('', true) | typst }}]{% if exp.company %} — {{ exp.company | typst }}{% endif %}{% if exp.date_range %} · {{ exp.date_range | typst }}{% endif %}
+{% if exp.bullets %}
+{% for bullet in exp.bullets %}
+- {{ bullet | typst }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if projects %}
+= Proyectos
+{% for proj in projects %}
+#text(weight: "bold")[{{ proj.name | default('', true) | typst }}]
+{% if proj.bullets %}
+{% for bullet in proj.bullets %}
+- {{ bullet | typst }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if achievements %}
+= Logros Destacados
+{% for item in achievements %}
+- {{ item | typst }}
+{% endfor %}
+{% endif %}
+
+{% if education %}
+= Educación
+{% for edu in education %}
+#text(weight: "bold")[{{ edu.degree | default('', true) | typst }}]{% if edu.institution %} — {{ edu.institution | typst }}{% endif %}{% if edu.year %} · {{ edu.year | typst }}{% endif %}
+{% if edu.details %}
+{{ edu.details | join(' | ') | typst }}
+{% endif %}
+
+{% endfor %}
+{% endif %}

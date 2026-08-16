@@ -1,0 +1,26 @@
+Ingeniero/a de Software Backend
+Santiago, Chile
+Empresa Ficticia S.A.
+
+Descripción del empleo
+
+Buscamos una persona para diseñar, construir y escalar servicios backend que soportan nuestros productos digitales, trabajando en conjunto con equipos de producto y datos.
+
+Responsabilidades:
+
+Diseñar e implementar APIs REST de alto rendimiento y baja latencia.
+Construir y mantener arquitecturas orientadas a eventos con colas y streams.
+Optimizar procesos de procesamiento de datos y consultas sobre bases de datos relacionales y BigQuery.
+Asegurar la calidad mediante testing automatizado y despliegues continuos.
+Monitorear servicios en producción y resolver cuellos de botella de rendimiento.
+
+Requisitos:
+
+Experiencia sólida en Python, idealmente con FastAPI o Django.
+Conocimientos de SQL y modelado de datos.
+Experiencia en diseño de APIs RESTful, microservicios y sistemas distribuidos.
+Manejo de Docker y despliegues en la nube (GCP o AWS).
+Experiencia con testing automatizado (pytest) y CI/CD (GitHub Actions o similar).
+Deseable: Go, observabilidad (Grafana, Prometheus) y arquitecturas serverless.
+
+Modalidad híbrida. Santiago, Chile.

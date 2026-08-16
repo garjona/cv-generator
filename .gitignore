@@ -1,0 +1,40 @@
+# --- Python ---
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+*.pyc
+*.pyc.*
+*.pyo
+*.pyd
+dist/
+build/
+*.egg-info/
+
+# --- Secretos / configuracion local ---
+.env
+.env.local
+.claude/
+
+# --- Datos personales y artefactos generados ---
+# inputs/ contiene CVs reales y ofertas: NUNCA se versiona.
+# Los ejemplos ficticios viven en inputs/examples/.
+inputs/*
+!inputs/examples/
+!inputs/.gitkeep
+
+# Perfil maestro (SQLite) con datos personales
+data/
+*.db
+
+# CVs generados
+outputs/*
+!outputs/.gitkeep
+
+logs/*
+!logs/.gitkeep
+
+temp/
+
+# Documento de trabajo interno (historial extenso, no aporta al repo publico)
+AI_PROJECT_CONTEXT.md

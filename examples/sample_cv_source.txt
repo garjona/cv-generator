@@ -1,0 +1,28 @@
+María Pérez
+maria.perez@email.com | +56 9 1234 5678 | https://www.linkedin.com/in/mariaperez
+
+Perfil Profesional
+Ingeniera de software con experiencia en backend y datos, enfocada en automatización y desarrollo de APIs.
+
+Experiencia Profesional
+Ingeniera de Datos - Analytica Spa 2021-Actualidad
+- Diseño de pipelines ETL con Python y SQL para integración de datos.
+- Desarrollo de APIs REST internas con FastAPI.
+- Automatización de despliegues con Docker y GitHub Actions.
+
+Desarrolladora Backend - SoftCloud 2019-2021
+- Implementación de microservicios en Python.
+- Optimización de consultas SQL y reportes.
+
+Educación
+Ingeniería Civil Informática
+Universidad Técnica
+2018
+
+Habilidades
+Python, SQL, FastAPI, Docker, Git, AWS, ETL, APIs REST
+
+Proyectos
+Plataforma de Integración de Datos
+- Integración de múltiples fuentes y automatización de procesos.
+- Dashboard operacional para monitoreo.

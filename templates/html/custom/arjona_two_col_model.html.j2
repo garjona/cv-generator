@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ candidate_name | default('CV', true) }}</title>
+
+  <!-- requerido por tu pipeline -->
+  <link rel="stylesheet" href="{{ css_file_name | default('output_cv.css', true) }}">
+
+</head>
+<body class="cv">
+  {# ---------------- helpers ---------------- #}
+  {% set _contacts = contact_lines | default([], true) %}
+  {% set _skills = skills | default([], true) %}
+  {% set _experiences = experiences | default([], true) %}
+  {% set _projects = projects | default([], true) %}
+  {% set _education = education | default([], true) %}
+  {% set _achievements = achievements | default([], true) %}
+  {% set _languages = languages | default([], true) %}
+
+  {# opcionales (no inventamos; solo render si vienen) #}
+  {% set _soft_skills = soft_skills | default([], true) %}
+  {% set _hobbies = hobbies | default([], true) %}
+
+  {# skills split: barras a la izquierda, resto en "MÁS HABILIDADES" #}
+  {% set _max_sidebar_skills = max_sidebar_skills | default(12, true) %}
+  {% set _sidebar_skills = _skills[:_max_sidebar_skills] %}
+  {% set _more_skills = _skills[_max_sidebar_skills:] %}
+
+  <header class="cv-header">
+    <h1 class="cv-name">
+      {{ candidate_name | default('', true) }}
+    </h1>
+
+    {% if professional_title %}
+      <div class="cv-headline">
+        {{ professional_title }}
+      </div>
+    {% endif %}
+
+    {% if _contacts and (_contacts | length > 0) %}
+      <div class="cv-contacts">
+        {% for c in _contacts %}
+          {% if c %}
+            <span class="cv-contact">{{ c }}</span>{% if not loop.last %}<span class="dot">•</span>{% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </header>
+
+  <main class="cv-body">
+    <!-- LEFT COLUMN -->
+    <aside class="col col-left">
+      {% if professional_summary %}
+        <section class="sec">
+          <h2 class="sec-title">PRESENTACIÓN.</h2>
+          <div class="sec-rule"></div>
+          <p class="para">
+            {{ professional_summary }}
+          </p>
+        </section>
+      {% endif %}
+
+      {% if _sidebar_skills and (_sidebar_skills | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">HABILIDADES TÉCNICAS.</h2>
+          <div class="sec-rule"></div>
+
+          <ul class="skill-tags">
+            {% for sk in _sidebar_skills %}
+              {% set sk_name = sk.name | default('', true) if sk is mapping else sk %}
+              {% if sk_name %}
+                <li class="skill-tag">{{ sk_name }}</li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      {% if _languages and (_languages | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">IDIOMAS.</h2>
+          <div class="sec-rule"></div>
+
+          <ul class="lang-list">
+            {% for lang in _languages %}
+              {% set lang_name = lang.name | default('', true) if lang is mapping else lang %}
+              {% set lang_level = lang.level | default('', true) if lang is mapping else '' %}
+              {% if lang_name %}
+                <li class="lang-item">
+                  <span class="lang-name">{{ lang_name }}</span>{% if lang_level %}<span class="lang-level">{{ lang_level }}</span>{% endif %}
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      {% if _soft_skills and (_soft_skills | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">HABILIDADES BLANDAS.</h2>
+          <div class="sec-rule"></div>
+
+          <ul class="check-list">
+            {% for s in _soft_skills %}
+              {% if s %}
+                <li class="check-item">
+                  <span class="check">✓</span>
+                  <span class="check-text">{{ s }}</span>
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      {% if _hobbies and (_hobbies | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">HOBBIES Y PASATIEMPOS.</h2>
+          <div class="sec-rule"></div>
+
+          <ul class="hobby-list">
+            {% for h in _hobbies %}
+              {% if h is mapping %}
+                {% set icon = h.icon | default('•', true) %}
+                {% set label = h.label | default('', true) %}
+              {% else %}
+                {% set icon = '•' %}
+                {% set label = h %}
+              {% endif %}
+              {% if label %}
+                <li class="hobby-item">
+                  <span class="hobby-icon">{{ icon }}</span>
+                  <span class="hobby-text">{{ label }}</span>
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    </aside>
+
+    <!-- RIGHT COLUMN -->
+    <section class="col col-right">
+      {% if _education and (_education | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">EDUCACIÓN UNIVERSITARIA.</h2>
+          <div class="sec-rule"></div>
+
+          {% for ed in _education %}
+            {% set degree = ed.degree | default('', true) if ed is mapping else '' %}
+            {% set inst = ed.institution | default('', true) if ed is mapping else '' %}
+            {% set year = ed.year | default('', true) if ed is mapping else '' %}
+            {% set details = ed.details | default([], true) if ed is mapping else [] %}
+
+            <article class="block avoid-break">
+              <div class="block-head">
+                <div class="block-title">
+                  {{ (degree ~ (', ' if degree and inst else '') ~ inst) }}
+                </div>
+              </div>
+
+              {% if year %}
+                <div class="block-meta"><em>{{ year }}</em></div>
+              {% endif %}
+
+              {% if details and (details | length > 0) %}
+                <p class="para">
+                  {% if details is string %}
+                    {{ details }}
+                  {% else %}
+                    {{ details | join(' ') }}
+                  {% endif %}
+                </p>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if _experiences and (_experiences | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">EXPERIENCIA LABORAL.</h2>
+          <div class="sec-rule"></div>
+
+          {% for exp in _experiences %}
+            {% set title = exp.title | default('', true) if exp is mapping else '' %}
+            {% set company = exp.company | default('', true) if exp is mapping else '' %}
+            {% set date_range = exp.date_range | default('', true) if exp is mapping else '' %}
+            {% set loc = exp.location | default('', true) if exp is mapping else '' %}
+            {% set bullets = exp.bullets | default([], true) if exp is mapping else [] %}
+            {% set exp_skills = exp.skills | default([], true) if exp is mapping else [] %}
+
+            <article class="block avoid-break">
+              <div class="block-head">
+                <div class="block-title">
+                  {{ title }}{% if title and company %} — {% endif %}{{ company }}
+                </div>
+              </div>
+
+              <div class="block-meta">
+                {% if date_range %}<em>{{ date_range }}</em>{% endif %}
+                {% if loc %}{% if date_range %}<span class="meta-sep">·</span>{% endif %}<span>{{ loc }}</span>{% endif %}
+              </div>
+
+              {% if bullets and (bullets | length > 0) %}
+                <ul class="bullet-list">
+                  {% for b in bullets %}
+                    {% if b %}
+                      <li class="bullet">{{ b }}</li>
+                    {% endif %}
+                  {% endfor %}
+                </ul>
+              {% endif %}
+
+              {% if exp_skills and (exp_skills | length > 0) %}
+                <div class="tech-line">
+                  <span class="tech-label">Tecnologías:</span>
+                  <span class="tech-value">{{ exp_skills | join(', ') }}</span>
+                </div>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if _more_skills and (_more_skills | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">MÁS HABILIDADES.</h2>
+          <div class="sec-rule"></div>
+
+          <p class="para more-skills">
+            {% set _more_names = [] %}
+            {% for sk in _more_skills %}
+              {% if sk is mapping %}
+                {% if sk.name %}{% set _ = _more_names.append(sk.name) %}{% endif %}
+              {% else %}
+                {% if sk %}{% set _ = _more_names.append(sk) %}{% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ _more_names | join(' · ') }}
+          </p>
+        </section>
+      {% endif %}
+
+      {% if _projects and (_projects | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">PROYECTOS INDEPENDIENTES.</h2>
+          <div class="sec-rule"></div>
+
+          {% for pr in _projects %}
+            {% set name = pr.name | default('', true) if pr is mapping else '' %}
+            {% set bullets = pr.bullets | default([], true) if pr is mapping else [] %}
+            {% set pr_skills = pr.skills | default([], true) if pr is mapping else [] %}
+
+            <article class="block avoid-break">
+              <div class="block-title">{{ name }}</div>
+
+              {% if bullets and (bullets | length > 0) %}
+                <ul class="bullet-list">
+                  {% for b in bullets %}
+                    {% if b %}
+                      <li class="bullet">{{ b }}</li>
+                    {% endif %}
+                  {% endfor %}
+                </ul>
+              {% endif %}
+
+              {% if pr_skills and (pr_skills | length > 0) %}
+                <div class="tech-line">
+                  <span class="tech-label">Tecnologías:</span>
+                  <span class="tech-value">{{ pr_skills | join(', ') }}</span>
+                </div>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if _achievements and (_achievements | length > 0) %}
+        <section class="sec">
+          <h2 class="sec-title">LOGROS.</h2>
+          <div class="sec-rule"></div>
+
+          <ul class="bullet-list avoid-break">
+            {% for a in _achievements %}
+              {% if a %}
+                <li class="bullet">{{ a }}</li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+    </section>
+  </main>
+</body>
+</html>

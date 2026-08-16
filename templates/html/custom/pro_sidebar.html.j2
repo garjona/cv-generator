@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ candidate_name | default('CV', true) }}</title>
+  <link rel="stylesheet" href="{{ css_file_name | default('output_cv.css', true) }}">
+</head>
+<body class="cv">
+  {% set _contacts = contact_lines | default([], true) %}
+  {% set _skills = skills | default([], true) %}
+  {% set _experiences = experiences | default([], true) %}
+  {% set _education = education | default([], true) %}
+  {% set _languages = languages | default([], true) %}
+  {% set _projects = projects | default([], true) %}
+
+  <main class="cv-body">
+    <!-- ---------- SIDEBAR (banda teal) ---------- -->
+    <aside class="side">
+      <div class="side-inner">
+        {% if _contacts and (_contacts | length > 0) %}
+          <section class="s-sec">
+            <h2 class="s-title">Contacto</h2>
+            <ul class="s-contact">
+              {% for c in _contacts %}
+                {% if c %}<li>{{ c | replace('https://', '') | replace('http://', '') }}</li>{% endif %}
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+
+        {% if _skills and (_skills | length > 0) %}
+          <section class="s-sec">
+            <h2 class="s-title">Habilidades</h2>
+            <ul class="s-chips">
+              {% for sk in _skills %}
+                {% set n = sk.name | default('', true) if sk is mapping else sk %}
+                {% if n %}<li>{{ n }}</li>{% endif %}
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+
+        {% if _languages and (_languages | length > 0) %}
+          <section class="s-sec">
+            <h2 class="s-title">Idiomas</h2>
+            <ul class="s-langs">
+              {% for l in _languages %}
+                {% set ln = l.name | default('', true) if l is mapping else l %}
+                {% set lv = l.level | default('', true) if l is mapping else '' %}
+                {% if ln %}<li><span class="ln">{{ ln }}</span>{% if lv %}<span class="lv">{{ lv }}</span>{% endif %}</li>{% endif %}
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+
+        {% if _education and (_education | length > 0) %}
+          <section class="s-sec">
+            <h2 class="s-title">Educación</h2>
+            {% for ed in _education %}
+              {% set degree = ed.degree | default('', true) if ed is mapping else '' %}
+              {% set inst = ed.institution | default('', true) if ed is mapping else '' %}
+              {% set year = ed.year | default('', true) if ed is mapping else '' %}
+              {% set details = ed.details | default([], true) if ed is mapping else [] %}
+              <div class="s-edu">
+                {% if degree %}<div class="s-edu-degree">{{ degree }}</div>{% endif %}
+                {% if inst %}<div class="s-edu-inst">{{ inst }}</div>{% endif %}
+                {% if year %}<div class="s-edu-year">{{ year }}</div>{% endif %}
+                {% if details and (details | length > 0) %}
+                  <div class="s-edu-det">{% if details is string %}{{ details }}{% else %}{{ details | join(' · ') }}{% endif %}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </section>
+        {% endif %}
+      </div>
+    </aside>
+
+    <!-- ---------- MAIN ---------- -->
+    <section class="main">
+      <header class="head">
+        <h1 class="name">{{ candidate_name | default('', true) }}</h1>
+        {% if professional_title %}<div class="title">{{ professional_title }}</div>{% endif %}
+      </header>
+
+      {% if professional_summary %}
+        <section class="m-sec">
+          <h2 class="m-title">Perfil</h2>
+          <p class="summary">{{ professional_summary }}</p>
+        </section>
+      {% endif %}
+
+      {% if _experiences and (_experiences | length > 0) %}
+        <section class="m-sec">
+          <h2 class="m-title">Experiencia</h2>
+          {% for exp in _experiences %}
+            {% set title = exp.title | default('', true) if exp is mapping else '' %}
+            {% set company = exp.company | default('', true) if exp is mapping else '' %}
+            {% set date_range = exp.date_range | default('', true) if exp is mapping else '' %}
+            {% set loc = exp.location | default('', true) if exp is mapping else '' %}
+            {% set bullets = exp.bullets | default([], true) if exp is mapping else [] %}
+            {% set exp_skills = exp.skills | default([], true) if exp is mapping else [] %}
+            <article class="job">
+              <div class="job-title">{{ title }}{% if title and company %} · {% endif %}<span class="job-company">{{ company }}</span></div>
+              <div class="job-meta">
+                {% if date_range %}{{ date_range }}{% endif %}{% if loc %}{% if date_range %} · {% endif %}{{ loc }}{% endif %}
+              </div>
+              {% if bullets and (bullets | length > 0) %}
+                <ul class="job-bullets">
+                  {% for b in bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}
+                </ul>
+              {% endif %}
+              {% if exp_skills and (exp_skills | length > 0) %}
+                <div class="tech"><b>Tecnologías:</b> {{ exp_skills | join(' · ') }}</div>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if _projects and (_projects | length > 0) %}
+        <section class="m-sec">
+          <h2 class="m-title">Proyectos</h2>
+          {% for pr in _projects %}
+            {% set name = pr.name | default('', true) if pr is mapping else '' %}
+            {% set bullets = pr.bullets | default([], true) if pr is mapping else [] %}
+            {% set pr_skills = pr.skills | default([], true) if pr is mapping else [] %}
+            <article class="job">
+              <div class="job-title">{{ name }}</div>
+              {% if bullets and (bullets | length > 0) %}
+                <ul class="job-bullets">
+                  {% for b in bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}
+                </ul>
+              {% endif %}
+              {% if pr_skills and (pr_skills | length > 0) %}
+                <div class="tech"><b>Tecnologías:</b> {{ pr_skills | join(' · ') }}</div>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </section>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,72 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        env:
+          PYTHONPATH: src
+        run: pytest -q
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate CV from example inputs (no PDF, no LLM)
+        env:
+          PYTHONPATH: src
+          ENABLE_LLM: "false"
+        run: |
+          python main.py \
+            --cv-file inputs/examples/cv_ejemplo.md \
+            --job-file inputs/examples/oferta_ejemplo.txt \
+            --render-format html \
+            --template-file templates/html/custom/pro_sidebar.html.j2 \
+            --template-css-file templates/html/custom/pro_sidebar.css.j2 \
+            --pages 2 \
+            --no-interactive \
+            --no-pdf \
+            --output-dir outputs/ci_smoke
+
+      - name: Check generated artifacts
+        run: |
+          test -f outputs/ci_smoke/output_cv.html
+          test -f outputs/ci_smoke/output_cv.css
+          test -f outputs/ci_smoke/cv_generation_report.md
+          echo "Smoke test OK"

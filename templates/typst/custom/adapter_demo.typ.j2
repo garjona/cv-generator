@@ -1,0 +1,15 @@
+﻿#set page(margin: (x: 1.6cm, y: 1.4cm))
+#set text(size: 10pt)
+
+#text(size: 18pt, weight: "bold")[{{ profile.name | typst }}]
+{{ profile.contacts | join(' · ') | typst }}
+
+#text(style: "italic")[{{ target.title | typst }}{% if target.company %} · {{ target.company | typst }}{% endif %}]
+
+= Resumen
+{{ profile.summary | typst }}
+
+= Skills
+{% for s in sections.skills %}
+- {{ s | typst }}
+{% endfor %}

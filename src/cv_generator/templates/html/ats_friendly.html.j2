@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ candidate_name or "CV" }} - CV</title>
+  <link rel="stylesheet" href="{{ css_file_name | default('output_cv.css', true) }}">
+</head>
+<body class="{% if page_target == 2 %}two-pages{% else %}one-page{% endif %}">
+  <main class="cv">
+    <header class="cv-header">
+      <h1>{{ candidate_name }}</h1>
+      {% if job_target and (job_target.title or job_target.company) %}
+      <p class="target">
+        {{ job_target.title }}
+        {% if job_target.company %} · {{ job_target.company }}{% endif %}
+        {% if job_target.location %} · {{ job_target.location }}{% endif %}
+      </p>
+      {% endif %}
+      {% if contact_lines %}
+      <ul class="contact-list">
+        {% for contact in contact_lines %}
+        <li>{{ contact }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </header>
+
+    {% if professional_summary %}
+    <section>
+      <h2>Resumen profesional</h2>
+      <p>{{ professional_summary }}</p>
+    </section>
+    {% endif %}
+
+    {% if skills %}
+    <section>
+      <h2>{{ skills_section_title | default("Habilidades relevantes", true) }}</h2>
+      <ul class="skills-grid">
+        {% for skill in skills %}
+        <li>{{ skill }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    {% if experiences %}
+    <section>
+      <h2>Experiencia laboral</h2>
+      {% for exp in experiences %}
+      <article class="entry">
+        <h3>{{ exp.title }}{% if exp.company %} — {{ exp.company }}{% endif %}</h3>
+        {% if exp.date_range %}<p class="meta">{{ exp.date_range }}</p>{% endif %}
+        {% if exp.location %}<p class="meta">{{ exp.location }}</p>{% endif %}
+        {% if exp.bullets %}
+        <ul class="bullets">
+          {% for bullet in exp.bullets %}
+          <li>{{ bullet }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if projects %}
+    <section class="{% if page_target == 2 %}page-break{% endif %}">
+      <h2>Proyectos</h2>
+      {% for project in projects %}
+      <article class="entry">
+        <h3>{{ project.name }}</h3>
+        {% if project.bullets %}
+        <ul class="bullets">
+          {% for bullet in project.bullets %}
+          <li>{{ bullet }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if education %}
+    <section>
+      <h2>Educación</h2>
+      {% for edu in education %}
+      <article class="entry">
+        <h3>{{ edu.degree }}{% if edu.institution %} — {{ edu.institution }}{% endif %}</h3>
+        {% if edu.year %}<p class="meta">{{ edu.year }}</p>{% endif %}
+        {% if edu.details %}
+        <ul class="bullets">
+          {% for detail in edu.details %}
+          <li>{{ detail }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if achievements %}
+    <section>
+      <h2>Logros</h2>
+      <ul class="bullets">
+        {% for achievement in achievements %}
+        <li>{{ achievement }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </main>
+</body>
+</html>

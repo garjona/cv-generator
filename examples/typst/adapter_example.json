@@ -1,0 +1,25 @@
+﻿{
+  "mapping": {
+    "profile": {
+      "name": "candidate_name",
+      "contacts": "contact_lines",
+      "summary": "professional_summary"
+    },
+    "target": {
+      "title": "job_target.title",
+      "company": "job_target.company"
+    },
+    "sections": {
+      "skills": "skills",
+      "experiences": "experiences",
+      "projects": "projects",
+      "education": "education",
+      "achievements": "achievements"
+    }
+  },
+  "static": {
+    "meta": {
+      "source": "cv_generator_typst"
+    }
+  }
+}

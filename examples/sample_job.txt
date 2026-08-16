@@ -1,0 +1,17 @@
+Ingeniero/a Backend Semi Senior
+Empresa: NubeLabs
+Ubicación: Remoto
+
+Responsabilidades
+- Desarrollar microservicios y APIs REST.
+- Colaborar con producto y QA.
+- Mantener pipelines de CI/CD.
+
+Requisitos
+- Python, FastAPI, SQL, Docker, Git
+- Experiencia con AWS
+- Comunicación efectiva
+
+Deseable
+- Kubernetes
+- Liderazgo técnico

@@ -1,0 +1,401 @@
+﻿// arjona_two_col_clean.typ.j2
+// Model-inspired two-column template with explicit page split for stable 2-page output.
+
+{% macro tstr(value, default="") -%}
+{%- if value is defined and value is not none and (value|string)|length > 0 -%}
+"{{ (value|string)
+  | replace('\\', '\\\\')
+  | replace('"', '\\"')
+  | replace('\r', '')
+  | replace('\n', '\\n')
+}}"
+{%- else -%}
+"{{ (default|string)
+  | replace('\\', '\\\\')
+  | replace('"', '\\"')
+  | replace('\r', '')
+  | replace('\n', '\\n')
+}}"
+{%- endif -%}
+{%- endmacro %}
+
+{% macro join_nonempty(items, sep=" | ") -%}
+{%- set out = [] -%}
+{%- for it in items -%}
+  {%- if it is not none and (it|string)|trim|length > 0 -%}
+    {%- set _ = out.append(it|string) -%}
+  {%- endif -%}
+{%- endfor -%}
+{{- out | join(sep) -}}
+{%- endmacro %}
+
+{% set profile = profile or {} %}
+{% set target = target or {} %}
+{% set sections = sections or {} %}
+{% set meta = meta or {} %}
+
+{% set page_target = (meta.page_target | default(2, true) | int) %}
+{% if page_target not in [1, 2] %}{% set page_target = 2 %}{% endif %}
+
+{% set skills_all = sections.skills if sections.skills is defined and sections.skills else [] %}
+{% set experiences = sections.experience if sections.experience is defined and sections.experience else [] %}
+{% set projects = sections.projects if sections.projects is defined and sections.projects else [] %}
+{% set education = sections.education if sections.education is defined and sections.education else [] %}
+{% set achievements = sections.achievements if sections.achievements is defined and sections.achievements else [] %}
+{% set soft_skills = sections.soft_skills if sections.soft_skills is defined and sections.soft_skills else [] %}
+{% set hobbies = sections.hobbies if sections.hobbies is defined and sections.hobbies else [] %}
+
+{% set skill_sidebar_limit = 3 if page_target == 2 else 9 %}
+{% set skills_sidebar = skills_all[:skill_sidebar_limit] %}
+{% set skills_extra = skills_all[skill_sidebar_limit:skill_sidebar_limit + 12] %}
+
+{% if page_target == 2 %}
+  {% set exp_page1 = [] %}
+  {% set exp_page2 = experiences[:2] %}
+{% else %}
+  {% set exp_page1 = experiences[:3] %}
+  {% set exp_page2 = [] %}
+{% endif %}
+
+{% set project_page1 = projects[:1] if page_target == 1 else [] %}
+{% set project_page2 = projects[:1] if page_target == 2 else [] %}
+{% set bullet_limit_page1 = 1 if page_target == 2 else 2 %}
+{% set bullet_limit_page2 = 1 if page_target == 2 else 2 %}
+{% set project_bullet_limit = 1 %}
+{% set summary_max_chars = 120 if page_target == 2 else 430 %}
+{% set bullet_max_chars = 170 if page_target == 2 else 190 %}
+
+{% set summary_text = profile.summary if profile.summary is defined and profile.summary else "" %}
+{% if summary_text and (summary_text | length) > summary_max_chars %}
+  {% set summary_text = summary_text[:summary_max_chars] ~ "..." %}
+{% endif %}
+
+{% set name_raw = profile.name | default("", true) | trim %}
+{% set name_tokens = name_raw.split() %}
+{% if name_tokens | length > 1 %}
+  {% set split_index = ((name_tokens | length + 1) // 2) %}
+  {% set name_line_1 = (name_tokens[:split_index] | join(" ") | upper) %}
+  {% set name_line_2 = (name_tokens[split_index:] | join(" ") | upper) %}
+{% else %}
+  {% set name_line_1 = name_raw | upper %}
+  {% set name_line_2 = "" %}
+{% endif %}
+
+{% set subtitle = "" %}
+{% if education and education[0] is mapping %}
+  {% set deg = education[0].degree if education[0].degree is defined else "" %}
+  {% set inst = education[0].institution if education[0].institution is defined else "" %}
+  {% if deg or inst %}
+    {% set subtitle = deg ~ (", " if deg and inst else "") ~ inst %}
+  {% endif %}
+{% endif %}
+{% if not subtitle %}
+  {% set subtitle_parts = [] %}
+  {% if target.title is defined and target.title %}{% set _ = subtitle_parts.append(target.title) %}{% endif %}
+  {% if target.company is defined and target.company %}{% set _ = subtitle_parts.append(target.company) %}{% endif %}
+  {% set subtitle = subtitle_parts | join(" - ") %}
+{% endif %}
+
+{% set contacts_ns = namespace(email="", phone="", linkedin="", others=[]) %}
+{% for raw_contact in profile.contacts | default([], true) %}
+  {% set contact = raw_contact | string | trim %}
+  {% if contact %}
+    {% set lc = contact | lower %}
+    {% if "@" in lc and not contacts_ns.email %}
+      {% set contacts_ns.email = contact %}
+    {% elif "linkedin" in lc and not contacts_ns.linkedin %}
+      {% set contacts_ns.linkedin = contact %}
+    {% elif not contacts_ns.phone %}
+      {% set contacts_ns.phone = contact %}
+    {% else %}
+      {% set _ = contacts_ns.others.append(contact) %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+{% set level_defaults = [0.98, 0.98, 0.98, 0.98, 0.98, 0.75, 0.75, 0.75, 0.52, 0.52, 0.52, 0.52] %}
+
+#set page(
+  paper: "a4",
+  margin: (top: 1.1cm, bottom: 1.1cm, left: 1.2cm, right: 1.2cm),
+  fill: white,
+)
+
+#set text(font: ("Libertinus Sans", "Noto Sans", "Arial"), size: 9.5pt)
+#set par(justify: true, leading: 1.14em)
+#set list(marker: "-", indent: 1.0em, body-indent: 0.12em)
+
+#let header_font = "Libertinus Serif"
+#let accent = rgb("#4f86b5")
+#let accent_soft = rgb("#9ec0d8")
+#let skill_fg = rgb("#5f95c0")
+#let skill_bg = rgb("#9ec6df")
+
+#let section_title(title) = [
+  #text(size: 11.6pt, weight: "bold", fill: accent)[#title]
+  #v(1pt)
+  #line(length: 100%, stroke: (paint: accent_soft, thickness: 0.9pt))
+  #v(5pt)
+]
+
+#let two_col(left, right) = [
+  #grid(columns: (0.41fr, 0.59fr), column-gutter: 16pt)[
+    #block(width: 100%)[#left]
+    #block(width: 100%)[#right]
+  ]
+]
+
+#let clamp01(x) = {
+  if x < 0 { 0 } else if x > 1 { 1 } else { x }
+}
+
+#let skill_row(label, level) = {
+  let lvl = clamp01(level)
+  [
+    #grid(columns: (0.43fr, 0.57fr), column-gutter: 7pt)[
+      #text(weight: "bold")[#label]
+      #stack(
+        rect(width: 100%, height: 6.0pt, radius: 1.4pt, fill: skill_bg, stroke: none),
+        rect(width: (lvl * 100) * 1%, height: 6.0pt, radius: 1.4pt, fill: skill_fg, stroke: none),
+      )
+    ]
+  ]
+}
+
+#let contact_item(label, value) = [
+  #text(weight: "bold")[#label]
+  #linebreak()
+  #value
+]
+
+#let check_item(value) = [
+  #grid(columns: (auto, 1fr), column-gutter: 6pt)[
+    #text(fill: accent)[✓]
+    #value
+  ]
+]
+
+#let hobby_item(icon, value) = [
+  #grid(columns: (auto, 1fr), column-gutter: 8pt)[
+    #text(fill: accent)[#icon]
+    #value
+  ]
+]
+
+#block(width: 100%)[
+  #text(font: header_font, size: 28pt, weight: "bold")[#text({{ tstr(name_line_1, "") }})]
+  {% if name_line_2 %}
+  #text(font: header_font, size: 28pt, weight: "bold")[#text({{ tstr(name_line_2, "") }})]
+  {% endif %}
+  {% if subtitle %}
+  #v(2pt)
+  #text(size: 12pt, weight: "medium")[#text({{ tstr(subtitle ~ ".", "") }})]
+  {% endif %}
+  #v(4pt)
+]
+
+#two_col(
+  [
+    {% if summary_text %}
+    #section_title("PRESENTACION.")
+    #text({{ tstr(summary_text, "") }})
+    #v(6pt)
+    {% endif %}
+
+    {% if contacts_ns.phone or contacts_ns.linkedin or contacts_ns.email %}
+    #section_title("CONTACTO.")
+    {% if contacts_ns.phone %}
+      #contact_item("Telefono:", text({{ tstr(contacts_ns.phone, "") }}))
+      #v(3pt)
+    {% endif %}
+    {% if contacts_ns.linkedin %}
+      #contact_item("Linkedin:", text({{ tstr(contacts_ns.linkedin, "") }}))
+      #v(3pt)
+    {% endif %}
+    {% if contacts_ns.email %}
+      #contact_item("Correo electronico:", text({{ tstr(contacts_ns.email, "") }}))
+      #v(4pt)
+    {% endif %}
+    {% endif %}
+
+    {% if skills_sidebar and skills_sidebar|length > 0 %}
+    #section_title("HABILIDADES TECNICAS.")
+    {% for sk in skills_sidebar %}
+      {% if sk is mapping %}
+        {% set skill_label = sk.name if sk.name is defined else "" %}
+        {% set skill_level = sk.level if sk.level is defined else (level_defaults[loop.index0] if loop.index0 < level_defaults|length else 0.62) %}
+      {% else %}
+        {% set skill_label = sk %}
+        {% set skill_level = level_defaults[loop.index0] if loop.index0 < level_defaults|length else 0.62 %}
+      {% endif %}
+      #skill_row(text({{ tstr(skill_label ~ ":", "") }}), {{ skill_level }})
+      #v(2.0pt)
+    {% endfor %}
+    {% endif %}
+  ],
+  [
+    {% if education and education|length > 0 %}
+    #section_title("EDUCACION UNIVERSITARIA.")
+    {% for ed in education[:1] %}
+      {% set deg = ed.degree if ed.degree is defined else "" %}
+      {% set inst = ed.institution if ed.institution is defined else "" %}
+      {% set dr = ed.date_range if ed.date_range is defined else (ed.year if ed.year is defined else "") %}
+      #text(weight: "bold", size: 13pt)[#text({{ tstr(deg ~ (" - " if deg and inst else "") ~ inst ~ ".", "") }})]
+      {% if dr %}
+      #v(1pt)
+      #text(style: "italic", size: 11pt)[#text({{ tstr(dr, "") }})]
+      {% endif %}
+      {% if ed.details is defined and ed.details %}
+        {% for detail in ed.details[:1] %}
+          {% set detail_text = detail %}
+          {% if detail_text and (detail_text|string)|length > 120 %}
+            {% set detail_text = (detail_text|string)[:120] ~ "..." %}
+          {% endif %}
+          #v(2pt)
+          #text({{ tstr(detail_text, "") }})
+        {% endfor %}
+      {% endif %}
+      #v(6pt)
+    {% endfor %}
+    {% endif %}
+
+    {% if exp_page1 and exp_page1|length > 0 %}
+    #section_title("EXPERIENCIA LABORAL.")
+    {% for exp in exp_page1 %}
+      {% set title = exp.title if exp.title is defined else "" %}
+      {% set company = exp.company if exp.company is defined else "" %}
+      {% set date_range = exp.date_range if exp.date_range is defined else "" %}
+      #text(weight: "bold", size: 13pt)[#text({{ tstr(title ~ (" - " if title and company else "") ~ company ~ ".", "") }})]
+      {% if date_range %}
+      #v(1pt)
+      #text(style: "italic", size: 11pt)[#text({{ tstr(date_range ~ ".", "") }})]
+      {% endif %}
+      {% if exp.bullets is defined and exp.bullets and exp.bullets|length > 0 %}
+        {% for bullet in exp.bullets[:bullet_limit_page1] %}
+          {% set bullet_text = bullet %}
+          {% if bullet_text and (bullet_text|string)|length > bullet_max_chars %}
+            {% set bullet_text = (bullet_text|string)[:bullet_max_chars] ~ "..." %}
+          {% endif %}
+          #v(2pt)
+          #text({{ tstr(bullet_text, "") }})
+        {% endfor %}
+      {% endif %}
+      #v(6pt)
+    {% endfor %}
+    {% endif %}
+
+    {% if project_page1 and project_page1|length > 0 %}
+    #section_title("PROYECTOS INDEPENDIENTES.")
+    {% for pr in project_page1 %}
+      {% set pname = pr.name if pr.name is defined else "" %}
+      #text(weight: "bold", size: 13pt)[#text({{ tstr(pname ~ ".", "") }})]
+      {% if pr.bullets is defined and pr.bullets and pr.bullets|length > 0 %}
+        {% for bullet in pr.bullets[:project_bullet_limit] %}
+          {% set bullet_text = bullet %}
+          {% if bullet_text and (bullet_text|string)|length > bullet_max_chars %}
+            {% set bullet_text = (bullet_text|string)[:bullet_max_chars] ~ "..." %}
+          {% endif %}
+          #v(2pt)
+          #text({{ tstr(bullet_text, "") }})
+        {% endfor %}
+      {% endif %}
+      #v(8pt)
+    {% endfor %}
+    {% endif %}
+  ],
+)
+
+{% if page_target == 2 %}
+#pagebreak()
+
+#two_col(
+  [
+    {% if soft_skills and soft_skills|length > 0 %}
+    #section_title("HABILIDADES BLANDAS.")
+    {% for soft in soft_skills[:8] %}
+      #check_item(text({{ tstr(soft, "") }}))
+      #v(3pt)
+    {% endfor %}
+    #v(8pt)
+    {% endif %}
+
+    {% if hobbies and hobbies|length > 0 %}
+    #section_title("HOBBIES Y PASATIEMPOS.")
+    {% for hobby in hobbies[:6] %}
+      {% if hobby is mapping %}
+        {% set hobby_icon = hobby.icon if hobby.icon is defined else "•" %}
+        {% set hobby_label = hobby.label if hobby.label is defined else "" %}
+      {% else %}
+        {% set hobby_icon = "•" %}
+        {% set hobby_label = hobby %}
+      {% endif %}
+      #hobby_item(text({{ tstr(hobby_icon, "") }}), text({{ tstr(hobby_label, "") }}))
+      #v(4pt)
+    {% endfor %}
+    #v(8pt)
+    {% endif %}
+
+    {% if skills_extra and skills_extra|length > 0 %}
+    #section_title("MAS HABILIDADES.")
+    #text({{ tstr(skills_extra | join(" | "), "") }})
+    #v(8pt)
+    {% endif %}
+  ],
+  [
+    {% if exp_page2 and exp_page2|length > 0 %}
+    {% if not (exp_page1 and exp_page1|length > 0) %}
+      #section_title("EXPERIENCIA LABORAL.")
+    {% endif %}
+    {% for exp in exp_page2 %}
+      {% set title = exp.title if exp.title is defined else "" %}
+      {% set company = exp.company if exp.company is defined else "" %}
+      {% set date_range = exp.date_range if exp.date_range is defined else "" %}
+      #text(weight: "bold", size: 13pt)[#text({{ tstr(title ~ (" - " if title and company else "") ~ company ~ ".", "") }})]
+      {% if date_range %}
+      #v(1pt)
+      #text(style: "italic", size: 11pt)[#text({{ tstr(date_range ~ ".", "") }})]
+      {% endif %}
+      {% if exp.bullets is defined and exp.bullets and exp.bullets|length > 0 %}
+        {% for bullet in exp.bullets[:bullet_limit_page2] %}
+          {% set bullet_text = bullet %}
+          {% if bullet_text and (bullet_text|string)|length > bullet_max_chars %}
+            {% set bullet_text = (bullet_text|string)[:bullet_max_chars] ~ "..." %}
+          {% endif %}
+          #v(2pt)
+          #text({{ tstr(bullet_text, "") }})
+        {% endfor %}
+      {% endif %}
+      #v(8pt)
+    {% endfor %}
+    {% endif %}
+
+    {% if project_page2 and project_page2|length > 0 %}
+    #section_title("PROYECTOS INDEPENDIENTES.")
+    {% for pr in project_page2 %}
+      {% set pname = pr.name if pr.name is defined else "" %}
+      #text(weight: "bold", size: 13pt)[#text({{ tstr(pname ~ ".", "") }})]
+      {% if pr.bullets is defined and pr.bullets and pr.bullets|length > 0 %}
+        {% for bullet in pr.bullets[:project_bullet_limit] %}
+          {% set bullet_text = bullet %}
+          {% if bullet_text and (bullet_text|string)|length > bullet_max_chars %}
+            {% set bullet_text = (bullet_text|string)[:bullet_max_chars] ~ "..." %}
+          {% endif %}
+          #v(2pt)
+          #text({{ tstr(bullet_text, "") }})
+        {% endfor %}
+      {% endif %}
+      #v(8pt)
+    {% endfor %}
+    {% endif %}
+
+    {% if achievements and achievements|length > 0 %}
+    #section_title("LOGROS.")
+    #list(tight: true)[
+      {% for ach in achievements[:6] %}
+      - #text({{ tstr(ach, "") }})
+      {% endfor %}
+    ]
+    {% endif %}
+  ],
+)
+{% endif %}

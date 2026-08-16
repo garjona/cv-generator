@@ -1,0 +1,339 @@
+/* arjona_two_col_model.css.j2
+   Replica estilo modelo: serif, header grande, títulos azules con regla,
+   grid 2 columnas, skills con barras tipo píldora.
+*/
+
+/* ---------- Print (Chromium headless) ---------- */
+@page {
+  size: A4;
+  margin: 14mm 15mm;
+}
+
+@media print {
+  html, body { background: #fff !important; }
+  /* Evitar reglas globales agresivas: causan huecos enormes y páginas extra. */
+  section, article, ul, li {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  /* Solo bloques editoriales clave deben evitar corte interno. */
+  .avoid-break,
+  .block,
+  .skill {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Las listas SI pueden continuar en la página siguiente. */
+  .bullet-list,
+  .bullet-list li,
+  .contact-list,
+  .contact-list li {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+}
+
+/* ---------- Base ---------- */
+:root{
+  --accent: #4f86b5;
+  --accent-soft: #8fb6d6;
+  --text: #111;
+  --muted: #333;
+  --bar-bg: #d9e7f3;
+}
+
+*{ box-sizing: border-box; }
+
+html, body{
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: var(--text);
+  /* Modelo se ve serif; usamos fallback seguro */
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+.cv{
+  width: 100%;
+}
+
+/* ---------- Header ---------- */
+.cv-header{
+  padding: 10mm 0 4mm 0;
+}
+
+.cv-name{
+  margin: 0 0 2mm 0;
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase; /* como el modelo */
+  line-height: 1.02;
+}
+
+.cv-headline{
+  font-size: 18px;
+  margin: 0 0 4mm 0;
+  color: #222;
+}
+
+.cv-contacts{
+  font-size: 14px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.cv-contact{
+  white-space: nowrap;
+}
+
+.dot{
+  padding: 0 4px;
+  color: #444;
+}
+
+/* ---------- Body grid ---------- */
+.cv-body{
+  display: grid;
+  grid-template-columns: 0.37fr 0.63fr;
+  column-gap: 18px;
+  align-items: start;
+}
+
+/* columns */
+.col{ min-width: 0; }
+
+.col-left{
+  padding-right: 2px;
+}
+
+.col-right{
+  padding-left: 2px;
+}
+
+/* ---------- Sections ---------- */
+.sec{
+  margin: 0 0 18px 0;
+}
+
+.sec-title{
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  letter-spacing: 0.4px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.sec-rule{
+  height: 0;
+  border-top: 2px solid var(--accent-soft);
+  margin: 0 0 10px 0;
+}
+
+.para{
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #111;
+  text-align: justify;
+}
+
+/* ---------- Contact list ---------- */
+.contact-list{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.contact-item{
+  font-size: 14px;
+  color: #111;
+}
+
+/* ---------- Skills (tags) ---------- */
+.skill-tags{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill-tag{
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--bar-bg);
+  border-radius: 4px;
+  padding: 3px 8px;
+  line-height: 1.3;
+}
+
+/* ---------- Languages ---------- */
+.lang-list{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.lang-item{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.lang-name{
+  font-weight: 700;
+  color: #111;
+}
+
+.lang-level{
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---------- Check list (soft skills) ---------- */
+.check-list{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.check-item{
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  column-gap: 8px;
+  align-items: start;
+  font-size: 14px;
+}
+
+.check{
+  color: var(--accent);
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.check-text{
+  color: #111;
+}
+
+/* ---------- Hobbies ---------- */
+.hobby-list{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.hobby-item{
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  column-gap: 10px;
+  align-items: center;
+}
+
+.hobby-icon{
+  color: var(--accent);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.hobby-text{
+  font-size: 14px;
+}
+
+/* ---------- Blocks (education/experience/projects) ---------- */
+.block{
+  margin: 0 0 16px 0;
+}
+
+.block-head{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.block-title{
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.block-meta{
+  margin-top: 4px;
+  font-size: 14px;
+  color: #222;
+  font-style: italic;
+}
+
+.meta-sep{
+  padding: 0 6px;
+  color: #444;
+}
+
+.bullet-list{
+  margin: 10px 0 0 18px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.bullet{
+  margin: 0 0 6px 0;
+}
+
+.tech-line{
+  margin-top: 8px;
+  font-size: 13px;
+  color: #333;
+}
+
+.tech-label{
+  font-weight: 700;
+  color: #333;
+}
+
+.tech-value{
+  color: #333;
+}
+
+.more-skills{
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* ---------- Footer meta ---------- */
+.page-target{
+  margin-top: 18px;
+  font-size: 13px;
+  color: #444;
+}
+
+/* ---------- Small screens (still usable in browser) ---------- */
+@media screen and (max-width: 880px){
+  .cv-body{
+    grid-template-columns: 1fr;
+    row-gap: 18px;
+  }
+  .cv-name{
+    font-size: 38px;
+  }
+}

@@ -1,0 +1,36 @@
+services:
+  cvgen:
+    # Opcional: si no existe .env.local, el pipeline corre en modo determinístico.
+    env_file:
+      - path: .env.local
+        required: false
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_TYPST: "false"
+    image: cv-generator-mvp:local
+    volumes:
+      - ./inputs:/app/inputs
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./templates:/app/templates
+      - ./examples:/app/examples
+      - ./src:/app/src
+    stdin_open: true
+    tty: true
+    environment:
+      CVGEN_DB_PATH: /app/data/master_profile.db
+      CVGEN_OUTPUT_DIR: /app/outputs
+      CVGEN_LOGS_DIR: /app/logs
+
+  cvgen-typst:
+    extends:
+      service: cvgen
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_TYPST: "true"
+    image: cv-generator-mvp:typst

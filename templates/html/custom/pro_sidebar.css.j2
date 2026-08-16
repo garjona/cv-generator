@@ -1,0 +1,231 @@
+/* pro_sidebar.css.j2
+   CV profesional de 2 columnas con banda lateral teal a altura completa.
+   La banda se pinta con un gradiente en <html> para que cubra TODAS las páginas
+   en la impresión de Chromium headless.
+*/
+
+:root{
+  --teal: #0f5d5a;          /* fondo sidebar */
+  --teal-deep: #0b4a47;
+  --mint: #6fd0c4;          /* acento claro (títulos sidebar) */
+  --accent: #0f5d5a;        /* acento columna principal */
+  --ink: #1c2321;
+  --muted: #5f6f6d;
+  --side-text: #e4f1ef;
+  --side-muted: #a6ccc7;
+  --split: 33%;
+}
+
+*{ box-sizing: border-box; }
+
+@page{
+  size: A4;
+  margin: 0;
+}
+
+html{
+  /* Banda teal a la izquierda + blanco a la derecha, en cada página. */
+  background: linear-gradient(
+    to right,
+    var(--teal) 0,
+    var(--teal) var(--split),
+    #ffffff var(--split),
+    #ffffff 100%
+  );
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body{
+  margin: 0;
+  color: var(--ink);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+}
+
+.cv-body{
+  display: grid;
+  grid-template-columns: var(--split) 1fr;
+  align-items: start;
+}
+
+/* ---------------- SIDEBAR ---------------- */
+.side{
+  color: var(--side-text);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.side-inner{
+  padding: 18mm 7mm 12mm 9mm;
+}
+
+.s-sec{
+  margin: 0 0 8mm 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.s-title{
+  margin: 0 0 3mm 0;
+  font-size: 10.5pt;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--mint);
+  padding-bottom: 2mm;
+  border-bottom: 1px solid rgba(255,255,255,0.22);
+}
+
+.s-contact{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.s-contact li{
+  font-size: 9.5pt;
+  margin: 0 0 2.2mm 0;
+  color: var(--side-text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.s-chips{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.s-chips li{
+  font-size: 8.5pt;
+  font-weight: 600;
+  background: rgba(255,255,255,0.14);
+  color: #eafaf7;
+  border-radius: 3px;
+  padding: 2.5px 7px;
+  line-height: 1.35;
+}
+
+.s-langs{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.s-langs li{
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 9.5pt;
+  margin: 0 0 2mm 0;
+}
+.s-langs .ln{ font-weight: 600; }
+.s-langs .lv{ color: var(--side-muted); }
+
+.s-edu{
+  margin: 0 0 4.5mm 0;
+}
+.s-edu-degree{ font-weight: 700; font-size: 10pt; line-height: 1.3; }
+.s-edu-inst{ font-size: 9.5pt; color: var(--side-text); margin-top: 0.6mm; }
+.s-edu-year{ font-size: 9pt; color: var(--side-muted); margin-top: 0.6mm; }
+.s-edu-det{ font-size: 9pt; color: var(--side-muted); margin-top: 1mm; }
+
+/* ---------------- MAIN ---------------- */
+.main{
+  padding: 17mm 11mm 12mm 9mm;
+}
+
+.head{
+  margin: 0 0 6mm 0;
+}
+.name{
+  margin: 0;
+  font-size: 25pt;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.title{
+  margin: 2.5mm 0 0 0;
+  font-size: 11.5pt;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.m-sec{
+  margin: 0 0 6mm 0;
+}
+.m-title{
+  margin: 0 0 3mm 0;
+  font-size: 11.5pt;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-bottom: 1.5mm;
+  border-bottom: 2px solid var(--accent);
+}
+
+.summary{
+  margin: 0;
+  font-size: 10.5pt;
+  line-height: 1.6;
+  text-align: justify;
+}
+
+.job{
+  margin: 0 0 5mm 0;
+}
+.job-title{
+  font-size: 11.5pt;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+  break-after: avoid;
+  page-break-after: avoid;
+}
+.job-company{ font-weight: 700; }
+.job-meta{
+  margin: 0.6mm 0 2mm 0;
+  font-size: 9.5pt;
+  font-style: italic;
+  color: var(--muted);
+  break-after: avoid;
+  page-break-after: avoid;
+}
+.job-bullets{
+  margin: 0 0 0 4.5mm;
+  padding: 0;
+  font-size: 10pt;
+  line-height: 1.5;
+}
+.job-bullets li{
+  margin: 0 0 1.6mm 0;
+}
+.tech{
+  margin-top: 1.6mm;
+  font-size: 9pt;
+  color: var(--muted);
+}
+.tech b{ color: var(--ink); }
+
+/* ---------------- Print break rules ---------------- */
+@media print{
+  .s-sec, .job-title, .job-meta{ break-inside: avoid; page-break-inside: avoid; }
+  .job-bullets, .job-bullets li{ break-inside: auto; page-break-inside: auto; }
+}
+
+/* ---------------- Pantalla (browser) ---------------- */
+@media screen{
+  body{ background:#e9edec; }
+  .cv-body{
+    width: 210mm;
+    min-height: 297mm;
+    margin: 8mm auto;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.18);
+    background: linear-gradient(to right, var(--teal) 0, var(--teal) var(--split), #fff var(--split), #fff 100%);
+  }
+}

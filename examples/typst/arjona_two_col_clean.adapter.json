@@ -1,0 +1,34 @@
+{
+  "mapping": {
+    "profile": {
+      "name": { "$path": "candidate_name", "$default": "" },
+      "contacts": { "$path": "contact_lines", "$default": [] },
+      "summary": { "$path": "professional_summary", "$default": "" }
+    },
+    "target": {
+      "title": { "$path": "job_target.title", "$default": "" },
+      "company": { "$path": "job_target.company", "$default": "" },
+      "location": { "$path": "job_target.location", "$default": "" }
+    },
+    "sections": {
+      "skills": { "$path": "skills", "$default": [] },
+      "experience": { "$path": "experiences", "$default": [] },
+      "projects": { "$path": "projects", "$default": [] },
+      "education": { "$path": "education", "$default": [] },
+      "achievements": { "$path": "achievements", "$default": [] }
+    },
+    "meta": {
+      "page_target": { "$path": "page_target", "$default": 2 }
+    }
+  },
+  "static": {
+    "meta": {
+      "template_name": "arjona_two_col_clean",
+      "max_sidebar_skills": 8
+    },
+    "sections": {
+      "soft_skills": [],
+      "hobbies": []
+    }
+  }
+}
