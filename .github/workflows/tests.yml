@@ -66,7 +66,9 @@ jobs:
 
       - name: Check generated artifacts
         run: |
-          test -f outputs/ci_smoke/output_cv.html
-          test -f outputs/ci_smoke/output_cv.css
+          # El nombre se deriva del candidato del CV de ejemplo (Ana Pérez Soto).
+          test -f outputs/ci_smoke/CV_Ana_Perez_Soto.html
+          test -f outputs/ci_smoke/CV_Ana_Perez_Soto.css
           test -f outputs/ci_smoke/cv_generation_report.md
+          grep -q "CV_Ana_Perez_Soto.css" outputs/ci_smoke/CV_Ana_Perez_Soto.html
           echo "Smoke test OK"
