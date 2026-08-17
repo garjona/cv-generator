@@ -24,6 +24,8 @@
   {% set _languages = languages | default([], true) %}
   {% set _skills_label = experience_skills_label | default('Tecnologías', true) %}
   {% set _projects = projects | default([], true) %}
+  {% set _certifications = certifications | default([], true) %}
+  {% set _certifications_label = certifications_label | default('Certificaciones', true) %}
 
   <main class="cv-body">
     <!-- ---------- SIDEBAR (banda teal) ---------- -->
@@ -127,6 +129,22 @@
               {% endif %}
               {% if exp_skills and (exp_skills | length > 0) %}
                 <div class="tech"><b>{{ _skills_label }}:</b> {{ exp_skills | join(' · ') }}</div>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if _certifications and (_certifications | length > 0) %}
+        <section class="m-sec">
+          <h2 class="m-title">{{ _certifications_label }}</h2>
+          {% for c in _certifications %}
+            <article class="cert">
+              <div class="cert-head">
+                <span class="cert-name">{{ c.name }}</span>{% if c.year %}<span class="cert-year">{{ c.year }}</span>{% endif %}
+              </div>
+              {% if c.details and (c.details | length > 0) %}
+                <div class="cert-detail">{{ c.details | join(' ') }}</div>
               {% endif %}
             </article>
           {% endfor %}

@@ -220,6 +220,36 @@ body{
 }
 .tech b{ color: var(--ink); }
 
+/* ---------------- Certificaciones ---------------- */
+.cert{
+  margin: 0 0 3mm 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.cert-head{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.cert-name{
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: var(--ink);
+}
+.cert-year{
+  font-size: 9pt;
+  font-style: italic;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.cert-detail{
+  margin-top: 0.8mm;
+  font-size: 9.5pt;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 /* ---------------- Print break rules ---------------- */
 @media print{
   .s-sec, .job-title, .job-meta{ break-inside: avoid; page-break-inside: avoid; }

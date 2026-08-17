@@ -44,6 +44,12 @@ class ProfileService:
         )
         profile.skills = self._merge_skills(profile.skills, cv.skills, source=cv_source, confidence=0.82)
         profile.languages = self._merge_languages(profile.languages, getattr(cv, "languages", []))
+        profile.certifications = self._merge_records(
+            profile.certifications,
+            getattr(cv, "certifications", []),
+            source=cv_source,
+            identity_keys=("name", "year"),
+        )
 
         profile.metadata.setdefault("sources", [])
         profile.metadata["sources"].append(

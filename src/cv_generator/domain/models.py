@@ -40,6 +40,7 @@ class CVNormalized:
     projects: list[dict[str, Any]]
     sections: dict[str, list[str]]
     languages: list[dict[str, Any]] = field(default_factory=list)
+    certifications: list[dict[str, Any]] = field(default_factory=list)
     parsing_warnings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -59,6 +60,7 @@ class MasterProfile:
     interaction_answers: list[dict[str, Any]]
     metadata: dict[str, Any]
     languages: list[dict[str, Any]] = field(default_factory=list)
+    certifications: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
     def empty(cls, profile_id: str) -> "MasterProfile":
@@ -74,6 +76,7 @@ class MasterProfile:
             interaction_answers=[],
             metadata={"created_at": utc_now_iso(), "updated_at": utc_now_iso(), "sources": []},
             languages=[],
+            certifications=[],
         )
 
     @classmethod
@@ -90,6 +93,7 @@ class MasterProfile:
             interaction_answers=data.get("interaction_answers", []),
             metadata=data.get("metadata", {}),
             languages=data.get("languages", []),
+            certifications=data.get("certifications", []),
         )
 
     def to_dict(self) -> dict[str, Any]:

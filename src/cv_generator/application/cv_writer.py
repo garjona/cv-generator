@@ -57,6 +57,10 @@ class CVContentBuilder:
             ) or "Tecnologías",
             "skills": selected_skills,
             "languages": self._build_languages(profile),
+            "certifications": self._build_certifications(profile, pages),
+            "certifications_label": (
+                self.domain.labels.get("certifications") if self.domain else None
+            ) or "Certificaciones",
             "experiences": selected_experiences,
             "projects": selected_projects,
             "education": selected_education,
@@ -121,6 +125,25 @@ class CVContentBuilder:
                 continue
             seen.add(name.lower())
             out.append({"name": name, "level": str(lang.get("level") or "").strip() or None})
+        return out
+
+    def _build_certifications(self, profile: MasterProfile, pages: int) -> list[dict[str, Any]]:
+        limit = 2 if pages == 1 else 5
+        out: list[dict[str, Any]] = []
+        for cert in getattr(profile, "certifications", []) or []:
+            name = str(cert.get("name", "")).strip()
+            if not name:
+                continue
+            details = [self._clean_candidate_line(str(d)) for d in cert.get("details", [])]
+            out.append(
+                {
+                    "name": name,
+                    "year": str(cert.get("year") or "").strip() or None,
+                    "details": [d for d in details if d][:1],
+                }
+            )
+            if len(out) >= limit:
+                break
         return out
 
     def _experience_sort_key(self, exp: dict[str, Any]) -> tuple[int, int]:

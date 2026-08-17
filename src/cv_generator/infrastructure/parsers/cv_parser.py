@@ -124,6 +124,7 @@ class CVParser:
         education = self._parse_education(sections.get("education", []))
         projects = self._parse_projects(sections.get("projects", []))
         languages = self._parse_languages(sections.get("languages", []))
+        certifications = self._parse_certifications(sections.get("certifications", []))
 
         headline = self._parse_headline(sections.get("headline", []))
         if headline and not basics.get("headline"):
@@ -145,6 +146,7 @@ class CVParser:
             projects=projects,
             sections=sections,
             languages=languages,
+            certifications=certifications,
             parsing_warnings=self._dedupe_preserve_order(warnings),
         )
 
@@ -451,6 +453,48 @@ class CVParser:
             if text:
                 return text
         return None
+
+    def _parse_certifications(self, lines: list[str]) -> list[dict[str, Any]]:
+        """Capacitaciones, cursos y perfeccionamiento.
+
+        Una entrada empieza cuando la línea trae su propio año o cuando tiene
+        forma "Nombre: descripción"; el resto son detalles de la anterior.
+        """
+        result: list[dict[str, Any]] = []
+        current: dict[str, Any] | None = None
+
+        for raw in lines:
+            line = re.sub(r"^[\-\*•]\s*", "", self._strip_format_markers(raw)).strip()
+            if not line or len(re.sub(r"[^\w]", "", line)) <= 1:
+                continue
+
+            year_match = re.match(
+                r"^((?:19|20)\d{2}(?:\s*[-–—]\s*(?:(?:19|20)\d{2}|actualidad|presente))?)"
+                r"\s*[-–—:]?\s*(.*)$",
+                line,
+                flags=re.I,
+            )
+            name, year, detail = None, None, None
+            if year_match:
+                year = year_match.group(1).strip()
+                name = year_match.group(2).strip(" .,;-–—") or None
+            elif ":" in line[:80]:
+                head, _, rest = line.partition(":")
+                if head.strip():
+                    name = head.strip()
+                    detail = rest.strip()
+
+            if name:
+                current = {"name": name, "year": year, "details": [d for d in [detail] if d]}
+                result.append(current)
+            elif year and current is None:
+                current = {"name": None, "year": year, "details": []}
+                result.append(current)
+            elif current is not None:
+                current["details"].append(line)
+
+        # Entradas que sólo aportan año (encabezados tipo "2025 - Capacitaciones").
+        return [c for c in result if c.get("name")]
 
     def _parse_languages(self, lines: list[str]) -> list[dict[str, Any]]:
         result: list[dict[str, Any]] = []
