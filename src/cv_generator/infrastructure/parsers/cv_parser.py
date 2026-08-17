@@ -454,46 +454,56 @@ class CVParser:
                 return text
         return None
 
+    YEAR_SUFFIX = re.compile(
+        r"^(?P<name>.+?)\s*[-–—]\s*"
+        r"(?P<year>(?:19|20)\d{2}(?:\s*[-–—]\s*(?:(?:19|20)\d{2}|actualidad|presente))?)\s*$",
+        flags=re.I,
+    )
+    YEAR_PREFIX = re.compile(
+        r"^(?P<year>(?:19|20)\d{2}(?:\s*[-–—]\s*(?:(?:19|20)\d{2}|actualidad|presente))?)"
+        r"\s*[-–—:]?\s*(?P<name>.*)$",
+        flags=re.I,
+    )
+
     def _parse_certifications(self, lines: list[str]) -> list[dict[str, Any]]:
         """Capacitaciones, cursos y perfeccionamiento.
 
-        Una entrada empieza cuando la línea trae su propio año o cuando tiene
-        forma "Nombre: descripción"; el resto son detalles de la anterior.
+        Una entrada empieza con un subtítulo, con su año al inicio o al final,
+        o con la forma "Nombre: descripción". El resto son detalles de la anterior.
         """
         result: list[dict[str, Any]] = []
         current: dict[str, Any] | None = None
 
         for raw in lines:
+            is_heading = bool(re.match(r"^\s*#{2,6}\s+", raw))
             line = re.sub(r"^[\-\*•]\s*", "", self._strip_format_markers(raw)).strip()
             if not line or len(re.sub(r"[^\w]", "", line)) <= 1:
                 continue
 
-            year_match = re.match(
-                r"^((?:19|20)\d{2}(?:\s*[-–—]\s*(?:(?:19|20)\d{2}|actualidad|presente))?)"
-                r"\s*[-–—:]?\s*(.*)$",
-                line,
-                flags=re.I,
-            )
-            name, year, detail = None, None, None
-            if year_match:
-                year = year_match.group(1).strip()
-                name = year_match.group(2).strip(" .,;-–—") or None
+            name: str | None = None
+            year: str | None = None
+            detail: str | None = None
+
+            suffix = self.YEAR_SUFFIX.match(line)
+            prefix = self.YEAR_PREFIX.match(line)
+            if suffix:
+                name, year = suffix.group("name").strip(), suffix.group("year").strip()
+            elif prefix:
+                year = prefix.group("year").strip()
+                name = prefix.group("name").strip(" .,;-–—") or None
+            elif is_heading:
+                name = line
             elif ":" in line[:80]:
                 head, _, rest = line.partition(":")
                 if head.strip():
-                    name = head.strip()
-                    detail = rest.strip()
+                    name, detail = head.strip(), rest.strip()
 
             if name:
                 current = {"name": name, "year": year, "details": [d for d in [detail] if d]}
                 result.append(current)
-            elif year and current is None:
-                current = {"name": None, "year": year, "details": []}
-                result.append(current)
             elif current is not None:
                 current["details"].append(line)
 
-        # Entradas que sólo aportan año (encabezados tipo "2025 - Capacitaciones").
         return [c for c in result if c.get("name")]
 
     def _parse_languages(self, lines: list[str]) -> list[dict[str, Any]]:
