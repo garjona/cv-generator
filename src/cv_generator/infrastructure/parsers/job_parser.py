@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from cv_generator.domain.domain_config import DomainConfig
 from cv_generator.domain.models import JobPostingNormalized
 
 COMMON_SKILLS = [
@@ -115,6 +116,12 @@ STOPWORDS_ES = {
 
 
 class JobPostingParser:
+    def __init__(self, domain: DomainConfig | None = None) -> None:
+        # Sin dominio explícito se usa el catálogo tech histórico, para no
+        # romper a quien ya use el parser sin configuración.
+        self.domain = domain
+        self._skills = list(domain.skills) if domain and domain.skills else list(COMMON_SKILLS)
+
     def parse_path(self, path: Path) -> JobPostingNormalized:
         text = path.read_text(encoding="utf-8", errors="ignore")
         if path.suffix.lower() in {".html", ".htm"}:
@@ -352,7 +359,7 @@ class JobPostingParser:
         haystack = f"{text}\n" + "\n".join(candidate_lines)
         haystack_low = haystack.lower()
         found: list[str] = []
-        for skill in COMMON_SKILLS:
+        for skill in self._skills:
             pattern = re.escape(skill).replace(r"\ ", r"\s+")
             if re.search(rf"(?<!\w){pattern}(?!\w)", haystack_low, flags=re.I):
                 normalized = self._canonical_skill_name(skill)
@@ -396,6 +403,10 @@ class JobPostingParser:
         return re.sub(r"\s+", " ", value.lower().strip())
 
     def _canonical_skill_name(self, skill: str) -> str:
+        if self.domain and self.domain.canonical_labels:
+            mapped = self.domain.canonical_labels.get(skill.lower())
+            if mapped:
+                return mapped
         canonical = {
             "sql": "SQL",
             "aws": "AWS",

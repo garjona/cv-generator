@@ -3,12 +3,14 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from cv_generator.domain.domain_config import DomainConfig
 from cv_generator.domain.models import GeneratedCVContent, JobPostingNormalized, MasterProfile, MatchAnalysis
 
 
 class CVContentBuilder:
-    def __init__(self, llm_client: Any | None = None) -> None:
+    def __init__(self, llm_client: Any | None = None, domain: DomainConfig | None = None) -> None:
         self.llm_client = llm_client
+        self.domain = domain
 
     def build(
         self,
@@ -50,6 +52,9 @@ class CVContentBuilder:
             "job_target": {"title": job.title, "company": job.company, "location": job.location},
             "professional_summary": summary,
             "skills_section_title": "Habilidades Relevantes",
+            "experience_skills_label": (
+                self.domain.labels.get("experience_skills") if self.domain else None
+            ) or "Tecnologías",
             "skills": selected_skills,
             "languages": self._build_languages(profile),
             "experiences": selected_experiences,
@@ -397,28 +402,34 @@ class CVContentBuilder:
         return ordered[:limit]
 
     def _job_focus_terms(self, job: JobPostingNormalized, match: MatchAnalysis) -> list[str]:
+        domain_terms = list(self.domain.focus_terms) if self.domain else []
+        if not domain_terms:
+            # Sin dominio configurado se mantiene el vocabulario tech histórico.
+            domain_terms = [
+                "business intelligence",
+                "analisis de datos",
+                "análisis de datos",
+                "data insights",
+                "automatizacion",
+                "automatización",
+                "reportes",
+                "metricas",
+                "métricas",
+                "python",
+                "sql",
+                "dataflow",
+                "bigquery",
+                "etl",
+                "ia",
+                "inteligencia artificial",
+                "negocio",
+            ]
         seed_terms = [
             *job.required_skills,
             *job.preferred_skills,
             *job.keywords,
             *match.matching_skills,
-            "business intelligence",
-            "analisis de datos",
-            "análisis de datos",
-            "data insights",
-            "automatizacion",
-            "automatización",
-            "reportes",
-            "metricas",
-            "métricas",
-            "python",
-            "sql",
-            "dataflow",
-            "bigquery",
-            "etl",
-            "ia",
-            "inteligencia artificial",
-            "negocio",
+            *domain_terms,
         ]
         out: list[str] = []
         seen = set()
@@ -491,6 +502,10 @@ class CVContentBuilder:
     def _canonical_skill_label(self, label: str) -> str:
         value = str(label or "").strip()
         key = value.lower()
+        if self.domain and self.domain.canonical_labels:
+            mapped = self.domain.canonical_labels.get(key)
+            if mapped:
+                return mapped
         mapping = {
             "sql": "SQL",
             "python": "Python",
@@ -577,6 +592,8 @@ class CVContentBuilder:
         return out
 
     def _should_omit_skill_label(self, label: str) -> bool:
+        if self.domain and self.domain.omit_labels:
+            return self.domain.should_omit(label)
         # Ubicaciones y modalidades se filtran: llegan desde la oferta pero no son skills.
         if label.strip().lower() in {
             "chile",

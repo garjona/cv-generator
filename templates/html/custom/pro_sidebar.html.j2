@@ -22,6 +22,7 @@
   {% set _experiences = experiences | default([], true) %}
   {% set _education = education | default([], true) %}
   {% set _languages = languages | default([], true) %}
+  {% set _skills_label = experience_skills_label | default('Tecnologías', true) %}
   {% set _projects = projects | default([], true) %}
 
   <main class="cv-body">
@@ -125,7 +126,7 @@
                 </ul>
               {% endif %}
               {% if exp_skills and (exp_skills | length > 0) %}
-                <div class="tech"><b>Tecnologías:</b> {{ exp_skills | join(' · ') }}</div>
+                <div class="tech"><b>{{ _skills_label }}:</b> {{ exp_skills | join(' · ') }}</div>
               {% endif %}
             </article>
           {% endfor %}
@@ -149,7 +150,7 @@
                 </ul>
               {% endif %}
               {% if pr_skills and (pr_skills | length > 0) %}
-                <div class="tech"><b>Tecnologías:</b> {{ pr_skills | join(' · ') }}</div>
+                <div class="tech"><b>{{ _skills_label }}:</b> {{ pr_skills | join(' · ') }}</div>
               {% endif %}
             </article>
           {% endfor %}

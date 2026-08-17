@@ -30,10 +30,12 @@ Separación por capas (dominio / aplicación / infraestructura), con las depende
 src/cv_generator/
 ├── domain/           # Modelos y contratos (sin dependencias externas)
 ├── application/      # Casos de uso: orquestador, matching, redacción, perfil
-├── infrastructure/   # Parsers, SQLite, LLM, renderizado HTML/Typst
+├── infrastructure/   # Parsers, SQLite, LLM, config, renderizado HTML/Typst
 ├── interfaces/cli/   # Punto de entrada CLI
 └── templates/        # Plantillas HTML/CSS y Typst incluidas
 templates/            # Plantillas custom (fuera del paquete)
+config/domains/       # Vocabulario por rubro profesional
+inputs/candidates/    # Una carpeta por persona (no se versiona)
 inputs/examples/      # CV y oferta de ejemplo (datos ficticios)
 ```
 
@@ -64,6 +66,63 @@ cp .env.example .env.local
 ```
 
 ## Uso
+
+### Varios candidatos
+
+Cada persona vive en su propia carpeta con su CV, sus ofertas y su perfil:
+
+```
+inputs/candidates/
+  ana-perez/
+    candidate.json        # nombre, dominio, plantilla, datos que no se pueden parsear
+    cv.md                 # .md, .docx o .pdf
+    jobs/
+      empresa-x.txt
+    profile.db            # perfil maestro (se crea solo)
+```
+
+```bash
+python main.py --list-candidates
+python main.py --candidate ana-perez --job empresa-x
+```
+
+Eso resuelve el CV, la oferta, el perfil, la base de datos y la carpeta de salida
+(`outputs/<candidato>/<timestamp>/`).
+
+`candidate.json` mínimo:
+
+```json
+{
+  "name": "Ana Pérez Soto",
+  "domain": "tech",
+  "cv": "cv.md",
+  "pages": 2,
+  "template": "templates/html/custom/pro_sidebar.html.j2",
+  "template_css": "templates/html/custom/pro_sidebar.css.j2",
+  "basics": { "headline": "Ingeniera de Software Backend", "location": "Santiago, Chile" }
+}
+```
+
+Lo declarado en `basics` manda sobre lo parseado: hay CVs donde el nombre o el
+titular están en una imagen y no se pueden extraer.
+
+### Dominios profesionales
+
+El vocabulario de cada rubro vive en `config/domains/<nombre>.json`, no en el código:
+
+| Campo | Para qué sirve |
+| --- | --- |
+| `focus_terms` | Términos que priorizan un logro al recortar bullets |
+| `skills` | Catálogo reconocible en el CV y en la oferta |
+| `canonical_labels` | Cómo se escribe cada skill (`dua` → `DUA (Diseño Universal...)`) |
+| `omit_labels` | Skills demasiado genéricas **en ese rubro** |
+| `section_aliases` | Encabezados propios (`Competencias pedagógicas` → skills) |
+| `labels` | Rótulos del CV (en docencia no se habla de "Tecnologías") |
+
+Incluidos: `tech` y `docencia`. Para crear otro, copia uno y ajústalo:
+`--domain <nombre>` o el campo `domain` del candidato.
+
+### Uso directo (sin candidato)
 
 Generar un CV a partir de los ejemplos incluidos:
 
@@ -110,6 +169,10 @@ Los archivos se nombran a partir del candidato (`CV_Nombre_Apellido.pdf`) en vez
 | `--template-css-file` | CSS custom `.css` o `.css.j2` |
 | `--template-adapter-file` | Adapter JSON para mapear el contexto canónico a otra plantilla |
 | `--profile-id` | ID del perfil maestro (default `default`) |
+| `--candidate` | Slug en `inputs/candidates/` (resuelve CV, oferta, perfil y salida) |
+| `--job` | Nombre de la oferta dentro de `jobs/` del candidato |
+| `--domain` | Dominio profesional (`tech`, `docencia`, ...) |
+| `--list-candidates` | Lista los candidatos configurados |
 | `--db-path` | Ruta del SQLite del perfil maestro |
 | `--output-name` | Nombre base de los archivos generados (default: `CV_Nombre_Apellido`) |
 | `--no-interactive` | Omite las preguntas guiadas |
@@ -171,7 +234,7 @@ Si defines `OPENAI_API_KEY`, hazlo en `.env.local` (ignorado por git), nunca en 
 ## Limitaciones conocidas
 
 - La detección de skills se basa en una lista de tecnologías conocidas (`COMMON_SKILLS`), por lo que puede omitir tecnologías muy nuevas o de nicho.
-- Parte de la lógica de priorización tiene términos de dominio incrustados en el código; el siguiente paso es externalizarla a configuración por perfil.
+- Los CVs muy maquetados (tablas anidadas, títulos como imagen) pueden perder encabezados; el parser avisa y aplica heurísticas de rescate, pero conviene revisar el informe.
 - El objetivo de páginas es una guía: el contenido real puede desbordar y requerir ajuste manual.
 
 ## Licencia

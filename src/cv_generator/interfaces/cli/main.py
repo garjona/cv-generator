@@ -5,7 +5,9 @@ from datetime import datetime
 from pathlib import Path
 
 from cv_generator.application import CVGenerationOrchestrator, GenerationRequest
+from cv_generator.application.cv_writer import CVContentBuilder
 from cv_generator.config import load_settings
+from cv_generator.infrastructure.config import available_candidates, load_candidate, load_domain
 from cv_generator.infrastructure.llm import build_llm_client
 from cv_generator.infrastructure.parsers import CVParser, JobPostingParser
 from cv_generator.infrastructure.persistence import SQLiteProfileRepository
@@ -22,8 +24,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Genera un CV adaptado en español con salida HTML+CSS (default) o Typst."
     )
-    parser.add_argument("--cv-file", required=True, help="Ruta al CV base (.docx, .pdf o .md)")
-    group = parser.add_mutually_exclusive_group(required=True)
+    parser.add_argument("--candidate", default=None, help="Slug del candidato en inputs/candidates/ (resuelve CV, oferta, perfil y salida)")
+    parser.add_argument("--job", default=None, help="Nombre de la oferta dentro de la carpeta jobs/ del candidato")
+    parser.add_argument("--candidates-dir", default=None, help="Directorio de candidatos (default: inputs/candidates)")
+    parser.add_argument("--domain", default=None, help="Dominio profesional (tech, docencia, ...). Default: el del candidato")
+    parser.add_argument("--list-candidates", action="store_true", help="Lista los candidatos disponibles y termina")
+    parser.add_argument("--cv-file", default=None, help="Ruta al CV base (.docx, .pdf o .md)")
+    group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument("--job-file", help="Ruta a la oferta laboral (.html o .txt)")
     group.add_argument("--job-text", help="Texto plano de la oferta laboral")
     parser.add_argument("--pages", type=int, choices=[1, 2], default=1, help="Cantidad objetivo de páginas")
@@ -86,23 +93,72 @@ def ask_questions_cli(questions) -> dict[str, str]:
     return answers
 
 
+def _candidate_basics(candidate) -> dict | None:
+    """Datos declarados en candidate.json que mandan sobre lo parseado."""
+    if candidate is None:
+        return None
+    basics = dict(candidate.basics)
+    if candidate.name:
+        basics["name"] = candidate.name
+    return basics or None
+
+
 def main() -> None:
     args = build_arg_parser().parse_args()
     settings = load_settings()
 
-    cv_path = Path(args.cv_file)
+    candidates_dir = Path(args.candidates_dir) if args.candidates_dir else None
+
+    if args.list_candidates:
+        found = available_candidates(candidates_dir)
+        print("Candidatos disponibles:" if found else "No hay candidatos configurados.")
+        for slug in found:
+            print(f"  - {slug}")
+        return
+
+    candidate = None
+    if args.candidate:
+        try:
+            candidate = load_candidate(args.candidate, candidates_dir)
+        except FileNotFoundError as exc:
+            raise SystemExit(str(exc))
+
+    # Los argumentos explícitos siempre ganan sobre la configuración del candidato.
+    cv_value = args.cv_file or (str(candidate.cv_file) if candidate and candidate.cv_file else None)
+    if not cv_value:
+        raise SystemExit("Debes indicar --cv-file o --candidate con un CV configurado.")
+    cv_path = Path(cv_value)
     if not cv_path.exists():
         raise SystemExit(f"CV no encontrado: {cv_path}")
 
     job_path = Path(args.job_file) if args.job_file else None
+    if job_path is None and args.job:
+        if candidate is None:
+            raise SystemExit("--job requiere --candidate.")
+        try:
+            job_path = candidate.resolve_job(args.job)
+        except FileNotFoundError as exc:
+            raise SystemExit(str(exc))
+    if job_path is None and not args.job_text:
+        raise SystemExit("Debes indicar una oferta con --job, --job-file o --job-text.")
     if job_path and not job_path.exists():
         raise SystemExit(f"Oferta no encontrada: {job_path}")
 
-    template_file = Path(args.template_file) if args.template_file else None
+    domain_name = args.domain or (candidate.domain if candidate else None)
+    domain = None
+    if domain_name:
+        try:
+            domain = load_domain(domain_name)
+        except FileNotFoundError as exc:
+            raise SystemExit(str(exc))
+
+    template_value = args.template_file or (str(candidate.template_file) if candidate and candidate.template_file else None)
+    template_file = Path(template_value) if template_value else None
     if template_file and not template_file.exists():
         raise SystemExit(f"Template no encontrado: {template_file}")
 
-    template_css_file = Path(args.template_css_file) if args.template_css_file else None
+    css_value = args.template_css_file or (str(candidate.template_css_file) if candidate and candidate.template_css_file else None)
+    template_css_file = Path(css_value) if css_value else None
     if template_css_file and not template_css_file.exists():
         raise SystemExit(f"Template CSS no encontrado: {template_css_file}")
 
@@ -110,15 +166,25 @@ def main() -> None:
     if template_adapter_file and not template_adapter_file.exists():
         raise SystemExit(f"Adapter no encontrado: {template_adapter_file}")
 
-    output_dir = (
-        Path(args.output_dir)
-        if args.output_dir
-        else settings.default_output_dir / datetime.now().strftime("%Y%m%d_%H%M%S")
-    )
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if args.output_dir:
+        output_dir = Path(args.output_dir)
+    elif candidate:
+        # Cada candidato acumula sus salidas en su propia carpeta.
+        output_dir = settings.default_output_dir / candidate.slug / stamp
+    else:
+        output_dir = settings.default_output_dir / stamp
     output_dir.mkdir(parents=True, exist_ok=True)
 
     logger = setup_logging(output_dir / "execution.log")
-    repository = SQLiteProfileRepository(Path(args.db_path) if args.db_path else settings.database_path)
+    if args.db_path:
+        db_path = Path(args.db_path)
+    elif candidate:
+        db_path = candidate.db_path
+    else:
+        db_path = settings.database_path
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    repository = SQLiteProfileRepository(db_path)
     llm_client = build_llm_client(settings)
     templates_root = Path(__file__).resolve().parents[2] / "templates"
     html_renderer = JinjaHtmlRenderer(templates_root / "html")
@@ -126,14 +192,15 @@ def main() -> None:
     html_pdf_compiler = HtmlPdfCompiler()
 
     orchestrator = CVGenerationOrchestrator(
-        job_parser=JobPostingParser(),
-        cv_parser=CVParser(),
+        job_parser=JobPostingParser(domain=domain),
+        cv_parser=CVParser(domain=domain),
         profile_repository=repository,
         html_renderer=html_renderer,
         html_pdf_compiler=html_pdf_compiler,
         typst_renderer=typst_renderer,
         page_image_exporter=PDFPageImageExporter(),
         llm_client=llm_client,
+        content_builder=CVContentBuilder(llm_client=llm_client, domain=domain),
         logger=logger,
     )
 
@@ -142,9 +209,9 @@ def main() -> None:
         job_path=job_path,
         job_text=args.job_text,
         output_dir=output_dir,
-        pages=args.pages,
+        pages=(candidate.pages if candidate and args.pages == 1 else args.pages),
         template_style=args.template_style or settings.default_template_style,
-        profile_id=args.profile_id,
+        profile_id=(candidate.profile_id if candidate and args.profile_id == "default" else args.profile_id),
         render_format=args.render_format,
         template_file=template_file,
         template_css_file=template_css_file,
@@ -153,7 +220,8 @@ def main() -> None:
         compile_pdf=not args.no_pdf,
         export_jpg_pages=not args.no_jpg_pages,
         jpg_dpi=max(72, args.jpg_dpi),
-        output_name=args.output_name,
+        output_name=args.output_name or (candidate.output_name if candidate else None),
+        basics_override=_candidate_basics(candidate),
     )
 
     artifacts = orchestrator.run(request, ask_user=None if args.no_interactive else ask_questions_cli)

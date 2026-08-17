@@ -34,6 +34,7 @@ class GenerationRequest:
     export_jpg_pages: bool = True
     jpg_dpi: int = 180
     output_name: str | None = None
+    basics_override: dict | None = None
 
 
 class CVGenerationOrchestrator:
@@ -96,6 +97,12 @@ class CVGenerationOrchestrator:
 
         profile = self.profile_repository.get(request.profile_id)
         profile = self.profile_service.merge_cv_into_profile(profile, cv, request.profile_id)
+
+        # Los datos declarados por el candidato mandan sobre lo inferido del CV:
+        # hay documentos donde el nombre o el contacto no son parseables.
+        for key, value in (request.basics_override or {}).items():
+            if str(value).strip():
+                profile.basics[key] = value
         self.profile_repository.save(profile, event_type="ingest_cv", payload={"cv_path": str(request.cv_path)})
 
         match = self.matcher.analyze(job, profile)

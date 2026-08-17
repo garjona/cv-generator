@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from cv_generator.domain.domain_config import DomainConfig
 from cv_generator.domain.models import CVNormalized
 from cv_generator.infrastructure.parsers.job_parser import COMMON_SKILLS
 
@@ -74,6 +75,16 @@ SECTION_ALIASES = {
 
 
 class CVParser:
+    def __init__(self, domain: DomainConfig | None = None) -> None:
+        self.domain = domain
+        self._skills = list(domain.skills) if domain and domain.skills else list(COMMON_SKILLS)
+        # Los alias del dominio se suman a los base (no los reemplazan).
+        self._section_aliases: dict[str, set[str]] = {k: set(v) for k, v in SECTION_ALIASES.items()}
+        if domain:
+            for canonical, aliases in domain.section_aliases.items():
+                normalized = {self._normalize_header(a) for a in aliases}
+                self._section_aliases.setdefault(canonical, set()).update(normalized)
+
     def parse_path(self, path: Path) -> CVNormalized:
         suffix = path.suffix.lower()
         if suffix == ".docx":
@@ -151,10 +162,69 @@ class CVParser:
         except Exception as exc:
             raise RuntimeError(f"No se pudo abrir el archivo .docx: {path}") from exc
 
-        paragraphs = [p.text.strip() for p in document.paragraphs if p.text and p.text.strip()]
-        if not paragraphs:
-            warnings.append("El .docx no contenía párrafos detectables.")
-        return "\n".join(paragraphs), warnings
+        blocks = self._iter_docx_blocks(document)
+        if not blocks:
+            warnings.append(
+                "El .docx no contenía texto detectable (¿está en imágenes o requiere OCR?)."
+            )
+        return "\n".join(blocks), warnings
+
+    def _iter_docx_blocks(self, document: Any) -> list[str]:
+        """Texto del .docx en orden de documento, incluyendo tablas.
+
+        Muchos CVs maquetan sus columnas con tablas de Word; leer sólo
+        `document.paragraphs` deja fuera todo ese contenido.
+        """
+        from docx.table import Table  # type: ignore
+        from docx.text.paragraph import Paragraph  # type: ignore
+
+        blocks: list[str] = []
+        body = document.element.body
+        for child in body.iterchildren():
+            tag = child.tag.split("}")[-1]
+            if tag == "p":
+                text = Paragraph(child, document).text.strip()
+                if text:
+                    blocks.append(text)
+            elif tag == "tbl":
+                blocks.extend(self._docx_table_blocks(Table(child, document), document))
+
+        if not blocks:
+            # Último recurso: cuadros de texto y formas, que no aparecen ni como
+            # párrafo ni como tabla en el árbol del cuerpo.
+            blocks.extend(self._docx_textbox_blocks(document))
+        return blocks
+
+    def _docx_table_blocks(self, table: Any, document: Any) -> list[str]:
+        from docx.table import Table  # type: ignore
+        from docx.text.paragraph import Paragraph  # type: ignore
+
+        blocks: list[str] = []
+        seen_cells: set[int] = set()
+        for row in table.rows:
+            for cell in row.cells:
+                # Las celdas combinadas se repiten entre filas/columnas.
+                cell_id = id(cell._tc)
+                if cell_id in seen_cells:
+                    continue
+                seen_cells.add(cell_id)
+                for child in cell._tc.iterchildren():
+                    tag = child.tag.split("}")[-1]
+                    if tag == "p":
+                        text = Paragraph(child, document).text.strip()
+                        if text:
+                            blocks.append(text)
+                    elif tag == "tbl":
+                        blocks.extend(self._docx_table_blocks(Table(child, document), document))
+        return blocks
+
+    def _docx_textbox_blocks(self, document: Any) -> list[str]:
+        import re as _re
+
+        xml = document.element.xml
+        fragments = _re.findall(r"<w:t[^>]*>([^<]*)</w:t>", xml)
+        joined = " ".join(fragment for fragment in fragments if fragment.strip())
+        return [joined] if joined.strip() else []
 
     def _extract_text_from_pdf(self, path: Path) -> tuple[str, list[str]]:
         warnings: list[str] = []
@@ -318,11 +388,49 @@ class CVParser:
 
         for key in ["summary", "experience", "education", "skills", "projects"]:
             sections.setdefault(key, [])
+
+        rescue_warning = self._rescue_orphan_experience(sections)
+        if rescue_warning:
+            warnings.append(rescue_warning)
         return sections, warnings
+
+    ENTRY_WITH_DATES = re.compile(
+        r"^\s*(?:"
+        r"(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+)?"
+        r"(?:19|20)\d{2}\s*[-–—]\s*"
+        r"(?:(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+)?"
+        r"(?:(?:19|20)\d{2}|actualidad|presente)\s*[-–—]\s*\S+",
+        flags=re.I,
+    )
+
+    def _rescue_orphan_experience(self, sections: dict[str, list[str]]) -> str | None:
+        """Recupera experiencias que quedaron bajo otra sección.
+
+        Hay CVs (sobre todo .docx maquetados) donde el título "Experiencia" es
+        una imagen o una forma y se pierde al extraer el texto: las entradas
+        terminan colgando de la sección anterior. Si no hay experiencias pero sí
+        líneas con formato "2024 - 2025 - Cargo, Institución", se reubican.
+        """
+        if [line for line in sections.get("experience", []) if line.strip()]:
+            return None
+
+        for source in ("education", "certifications", "summary", "header"):
+            lines = sections.get(source, [])
+            start = next((i for i, line in enumerate(lines) if self.ENTRY_WITH_DATES.match(line)), None)
+            if start is None:
+                continue
+            moved = lines[start:]
+            sections[source] = lines[:start]
+            sections["experience"] = moved
+            return (
+                f"No se encontró el encabezado de experiencia; se recuperaron {len(moved)} líneas "
+                f"desde la sección '{source}' por su formato de fechas."
+            )
+        return None
 
     def _match_section_alias(self, line: str) -> str | None:
         normalized = self._normalize_header(line)
-        for canonical, aliases in SECTION_ALIASES.items():
+        for canonical, aliases in self._section_aliases.items():
             if normalized in aliases:
                 return canonical
         return None
@@ -404,7 +512,7 @@ class CVParser:
 
         detected: list[str] = []
         lower = full_text.lower()
-        for skill in COMMON_SKILLS:
+        for skill in self._skills:
             pattern = re.escape(skill).replace(r"\ ", r"\s+")
             if re.search(rf"(?<!\w){pattern}(?!\w)", lower, flags=re.I):
                 detected.append(skill.title() if skill.islower() and len(skill) > 3 else skill)
@@ -534,12 +642,31 @@ class CVParser:
         if date_match:
             start_date = date_match.group(1)
             end_date = date_match.group(2)
-            header = header.replace(date_match.group(0), "").strip(" -|,")
+            header = header.replace(date_match.group(0), "").strip(" -–—|,")
+        elif self.ENTRY_WITH_DATES.match(header):
+            # Formato "Octubre 2024 - Noviembre 2024 - Cargo, Institucion":
+            # las fechas van al inicio y el ultimo separador abre el cargo.
+            parts = re.split(r"\s*[-–—]\s*", header)
+            date_parts, rest_parts = [], []
+            for part in parts:
+                if not rest_parts and re.search(r"(19|20)\d{2}|actualidad|presente", part, flags=re.I):
+                    date_parts.append(part)
+                else:
+                    rest_parts.append(part)
+            start_date, end_date = self._extract_date_range(" - ".join(date_parts), None, None)
+            header = " - ".join(rest_parts).strip(" -–—|,") or header
 
         if " - " in header:
             title, company = [p.strip() for p in header.split(" - ", 1)]
         elif " | " in header:
             title, company = [p.strip() for p in header.split(" | ", 1)]
+        elif "," in header:
+            left, right = [p.strip() for p in header.split(",", 1)]
+            # "Cargo, Institución" sólo si el lado derecho parece una organización.
+            if left and right and self._looks_like_company_line(right):
+                title, company = left, right
+            else:
+                title = header.strip()
         else:
             title = header.strip()
 
@@ -563,6 +690,11 @@ class CVParser:
 
         bullets = [re.sub(r"^[\-\*\u2022]\s*", "", line).strip() for line in remaining if re.match(r"^[\-\*\u2022]\s+", line)]
         summary_lines = [line for line in remaining if not re.match(r"^[\-\*\u2022]\s+", line)]
+        # Muchos CVs listan logros como parrafos sueltos, sin vineta: cada linea
+        # es un item, no un bloque de prosa.
+        if not bullets and len(summary_lines) > 1:
+            bullets = [line.strip() for line in summary_lines if line.strip()]
+            summary_lines = []
         summary = " ".join(summary_lines).strip() if summary_lines else None
         skills = self._skills_from_text(" ".join(clean))
 
@@ -581,10 +713,42 @@ class CVParser:
             return self._parse_education_markdown(lines)
         result: list[dict[str, Any]] = []
         for block in self._split_blocks(lines):
+            clean = [self._strip_format_markers(l) for l in block if l.strip()]
+            # Restos de encabezados perdidos en la extracción (p. ej. sólo ".").
+            clean = [l for l in clean if len(re.sub(r"[^\w]", "", l)) > 1]
+            one_liners = [self._one_line_education(l) for l in clean]
+            # Si cada línea del bloque es una titulación completa, son entradas
+            # independientes y no un único título con su institución debajo.
+            if len(clean) > 1 and all(one_liners):
+                result.extend([e for e in one_liners if e])
+                continue
             entry = self._parse_education_block(block)
             if entry:
                 result.append(entry)
         return result
+
+    ONE_LINE_DEGREE = re.compile(
+        r"^(?P<degree>.+?)\s*[–—]\s*(?P<institution>[^()]+?)\s*(?:\((?P<years>[^)]*)\))?\s*$"
+    )
+
+    def _one_line_education(self, line: str) -> dict[str, Any] | None:
+        """Entradas del tipo "Título — Universidad (2018–2022)" en una sola línea."""
+        if not self._looks_like_degree(line):
+            return None
+        match = self.ONE_LINE_DEGREE.match(line.strip())
+        if not match:
+            return None
+        institution = (match.group("institution") or "").strip(" .,;")
+        if not institution or not self._looks_like_institution(institution):
+            return None
+        years = (match.group("years") or "").strip()
+        year_match = re.search(r"(19|20)\d{2}", years)
+        return {
+            "degree": match.group("degree").strip(" .,;"),
+            "institution": institution,
+            "year": years or (year_match.group(0) if year_match else None),
+            "details": [],
+        }
 
     def _parse_education_block(self, block: list[str]) -> dict[str, Any] | None:
         clean = [self._strip_format_markers(line) for line in block if line.strip()]
@@ -630,7 +794,8 @@ class CVParser:
     def _looks_like_degree(self, value: str) -> bool:
         return bool(
             re.match(
-                r"^\s*(ingenier[oa]|licenciad[oa]|t[e\u00e9]cnic[oa]|mag\u00edster|magister|master|m\u00e1ster|bachiller|"
+                r"^\s*(ingenier[oa]|licenciad[oa]|licenciatura|t[e\u00e9]cnic[oa]|mag\u00edster|magister|master|m\u00e1ster|bachiller|"
+                r"profesor[ea]?|profesorad[oa]|pedagog[ií]a|educador[ea]?|"
                 r"doctor(?:ad[oa])?|diplomad[oa]|post\u00edtulo|postitulo|postgrado|posgrado)\b",
                 value,
                 flags=re.I,
@@ -775,6 +940,7 @@ class CVParser:
                 and (
                     is_markdown_subheading
                     or bool(re.search(r"\b\d{4}\s*[-–]\s*(?:actualidad|presente|\d{4})\b", line, flags=re.I))
+                    or bool(self.ENTRY_WITH_DATES.match(line))
                 )
                 and len(current) > 0
             )
@@ -867,7 +1033,7 @@ class CVParser:
     def _skills_from_text(self, text: str) -> list[str]:
         lower = text.lower()
         found = []
-        for skill in COMMON_SKILLS:
+        for skill in self._skills:
             pattern = re.escape(skill).replace(r"\ ", r"\s+")
             if re.search(rf"(?<!\w){pattern}(?!\w)", lower, flags=re.I):
                 found.append(skill.title() if skill.islower() and len(skill) > 3 else skill)
